@@ -52,7 +52,14 @@ export default defineConfig({
   },
   preview: {
     port: FRONTEND_PORT,
+    strictPort: true,
     host: true,
     allowedHosts,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3598',
+        changeOrigin: true,
+      },
+    },
   },
 });

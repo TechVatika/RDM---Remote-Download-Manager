@@ -87,7 +87,7 @@ flowchart TB
     end
 
     subgraph Server["Ubuntu Server (PM2)"]
-        FE[Vite Frontend :3599]
+        FE[Frontend :3599<br/>built + preview]
         API[Express API :3598]
         WK[Download Worker]
         DB[(MariaDB / MySQL)]
@@ -120,7 +120,7 @@ flowchart TB
 |-------------|------|
 | `rdm-backend` | REST API, auth, settings, log viewer |
 | `rdm-worker` | Polls queue, runs yt-dlp & segmented HTTP |
-| `rdm-frontend` | React dashboard (Vite dev server or static build) |
+| `rdm-frontend` | Production React build (`vite build` + `vite preview`) |
 
 The worker writes a heartbeat file so the API can report whether downloads are actually running.
 
@@ -243,9 +243,10 @@ RDM connects WARP automatically when an 18+ download starts and disconnects when
 
 ### Production build (optional)
 
+The PM2 `rdm-frontend` process runs `npm run start`, which **builds** then serves `frontend/dist/` via `vite preview` (not the dev server). To rebuild manually after UI changes:
+
 ```bash
-cd frontend && npm run build
-# Serve frontend/dist/ behind nginx or keep Vite via PM2
+cd frontend && npm run build && pm2 restart rdm-frontend
 ```
 
 ---

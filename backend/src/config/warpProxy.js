@@ -312,7 +312,14 @@ export async function verifyWarpProxyReady() {
 export async function acquireWarpSession() {
   activeSessions += 1;
   if (activeSessions > 1) {
-    await verifyWarpProxyReady();
+    try {
+      // Wait for the in-flight connection instead of racing a port check.
+      if (ensurePromise) await ensurePromise;
+      else await verifyWarpProxyReady();
+    } catch (err) {
+      activeSessions -= 1;
+      throw err;
+    }
     return WARP_PROXY_URL;
   }
   return connectWarpOnce();

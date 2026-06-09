@@ -8,6 +8,7 @@ import { resolveDestination, finalizeDownloadPath } from '../config/paths.js';
 import { prepareDownloadUrl } from '../utils/mediaUrl.js';
 import { filenameFromUrl, sanitizeFilename } from '../utils/filename.js';
 import { downloadMedia, probeMedia } from './ytdlpDownload.js';
+import { beginAdultWarpForUrl, releaseAdultWarpForUrl, usesWarpForUrl } from '../config/adultProxy.js';
 import {
   downloadSegmented,
   cleanupSegmentedJob,
@@ -193,8 +194,9 @@ async function runJob(row) {
     return false;
   };
 
+  let jobUrl;
+  let warpHeldForJob = false;
   try {
-    let jobUrl;
     try {
       jobUrl = prepareDownloadUrl(row.url);
     } catch (err) {
@@ -215,6 +217,13 @@ async function runJob(row) {
         cleanupSegmentedJob(destDir, id);
       }
       return;
+    }
+
+    // Hold one WARP session for the entire job so probe + download share
+    // a single connect/disconnect instead of two separate cycles.
+    if (row.private && usesWarpForUrl(jobUrl)) {
+      await beginAdultWarpForUrl(jobUrl);
+      warpHeldForJob = true;
     }
 
     if (row.private) {
@@ -342,6 +351,9 @@ async function runJob(row) {
     activeJobs.delete(id);
     activePrivate.delete(id);
     pauseRequested.delete(id);
+    if (warpHeldForJob) {
+      await releaseAdultWarpForUrl(jobUrl).catch(() => {});
+    }
   }
 }
 

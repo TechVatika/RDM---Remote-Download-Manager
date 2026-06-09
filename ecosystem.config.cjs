@@ -31,9 +31,9 @@ module.exports = {
       name: 'rdm-frontend',
       cwd: '/mnt/4tb-1/RDM/frontend',
       script: 'npm',
-      args: 'run dev',
+      args: 'run start',
       env: {
-        NODE_ENV: 'development',
+        NODE_ENV: 'production',
       },
       autorestart: true,
       max_restarts: 10,
