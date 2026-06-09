@@ -49,6 +49,36 @@ function isAuthError(message = '') {
   );
 }
 
+/** Node fetch/undici uses "terminated" when the server or an abort kills the stream. */
+function isAbortLikeError(err) {
+  if (err?.name === 'AbortError') return true;
+  const m = String(err?.message || '').toLowerCase();
+  return /\bterminated\b|\baborted\b|\babort\b/.test(m);
+}
+
+function isConnectionDropError(err) {
+  const m = `${err?.message || ''} ${err?.cause?.message || ''}`.toLowerCase();
+  return (
+    /\bterminated\b|econnreset|etimedout|socket hang up|network|fetch failed|broken pipe|errno 104|errno 110|other side closed/.test(
+      m,
+    )
+  );
+}
+
+function friendlyHttpDownloadError(raw = '') {
+  const m = String(raw).toLowerCase();
+  if (/terminated|econnreset|socket hang up|broken pipe|errno 104|other side closed/.test(m)) {
+    return (
+      'The file host closed the connection mid-download — common with temporary CDN links whose token expires after a few minutes. ' +
+      'Get a fresh copy link from the site, update the URL if needed, then Retry or Resume (partial progress is kept on disk).'
+    );
+  }
+  if (/etimedout|timeout|timed out/.test(m)) {
+    return 'The download timed out waiting for the file host. Retry or Resume — partial progress is saved.';
+  }
+  return raw || 'Download failed';
+}
+
 async function deletePrivateJob(id) {
   await pool.query('DELETE FROM downloads WHERE id = ? AND private = 1', [id]);
 }
@@ -298,7 +328,10 @@ async function runJob(row) {
     }
     clearJobCredentials(id);
   } catch (err) {
-    if (err.name === 'AbortError') {
+    const destDir = resolveDestination(row.category);
+    const hasPartial = row.type !== 'media' && hasPartialJob(destDir, id);
+
+    if (isAbortLikeError(err)) {
       const dbStatus = await getJobControlStatus(id);
       if (pauseRequested.has(id) || dbStatus === 'paused') {
         await pool.query(
@@ -322,13 +355,24 @@ async function runJob(row) {
           log.info(`cancelled download #${id}`, { id });
         }
       }
+    } else if (hasPartial && isConnectionDropError(err)) {
+      clearJobCredentials(id);
+      const message = friendlyHttpDownloadError(err.message);
+      await pool.query(
+        `UPDATE downloads SET status = 'paused', error_message = ?, updated_at = NOW() WHERE id = ?`,
+        [message.slice(0, 2000), id],
+      );
+      log.warn(`paused download #${id} after connection drop (partial saved on disk)`, {
+        id,
+        error: err.message,
+      });
     } else {
       const rawMessage = err.message || 'Download failed';
       const needsAuth = err.authRequired === true || isAuthError(rawMessage);
       clearJobCredentials(id);
       const message = needsAuth
         ? 'This link requires a login. Add a username and password to continue.'
-        : rawMessage;
+        : friendlyHttpDownloadError(rawMessage);
       if (row.private) {
         await deletePrivateJob(id);
         log.error(`failed 18+ download #${id} (WARP off, purged from DB)`, {
