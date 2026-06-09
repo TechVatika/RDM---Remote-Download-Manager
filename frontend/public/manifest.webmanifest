@@ -1,0 +1,18 @@
+{
+  "name": "Remote Download Manager",
+  "short_name": "RDM",
+  "description": "Personal home-server download manager",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef2f8",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%232563eb'/%3E%3Cpath fill='white' d='M256 128l48 96h108l-88 64 32 108-100-72-100 72 32-108-88-64h108z'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

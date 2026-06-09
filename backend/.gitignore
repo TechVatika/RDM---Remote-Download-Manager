@@ -1,0 +1,7 @@
+node_modules
+.env
+*.log
+logs/
+data/cookies.txt
+data/media-auth.json
+data/worker-heartbeat.json
