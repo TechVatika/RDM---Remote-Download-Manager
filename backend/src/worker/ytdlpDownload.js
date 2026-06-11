@@ -325,6 +325,9 @@ export async function probeMedia(url) {
         formatId: String(q.height),
       }));
 
+    const availableHeights = videoQualities.map((q) => q.height);
+    const maxVideoHeight = availableHeights.length ? Math.max(...availableHeights) : null;
+
     const audioAvailable = formats.some((f) => f.acodec && f.acodec !== 'none');
 
     let playlist = null;
@@ -340,6 +343,8 @@ export async function probeMedia(url) {
       extractor: meta.extractor_key || meta.extractor || null,
       normalizedUrl: normalized,
       videoQualities,
+      availableHeights,
+      maxVideoHeight,
       audioAvailable,
       playlist,
     };

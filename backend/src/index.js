@@ -10,11 +10,13 @@ import platformsRouter from './routes/platforms.js';
 import settingsRouter from './routes/settings.js';
 import filesRouter from './routes/files.js';
 import systemRouter from './routes/system.js';
+import updatesRouter from './routes/updates.js';
 import { requireAuth } from './middleware/auth.js';
 import { securityHeaders, createRateLimiter } from './middleware/security.js';
 import { seedAdminUser } from './utils/seedAdmin.js';
 import { disconnectWarpWhenIdle } from './config/warpProxy.js';
 import { startDownloadWorker } from './worker/downloadWorker.js';
+import { startAutoUpdateScheduler } from './utils/autoUpdateScheduler.js';
 import { logger, setLogContext } from './utils/logger.js';
 
 setLogContext('api');
@@ -67,6 +69,7 @@ app.use('/api/platforms', requireAuth, platformsRouter);
 app.use('/api/settings', requireAuth, settingsRouter);
 app.use('/api/files', requireAuth, filesRouter);
 app.use('/api/system', requireAuth, systemRouter);
+app.use('/api/updates', requireAuth, updatesRouter);
 app.use('/api/downloads', requireAuth, downloadsRouter);
 
 app.use((err, _req, res, _next) => {
@@ -87,6 +90,7 @@ async function start() {
 
   app.listen(port, () => {
     log.info(`API listening on http://localhost:${port}`, { port });
+    startAutoUpdateScheduler();
     if (process.env.EMBED_WORKER === 'true') {
       log.info('embedded download worker enabled');
       startDownloadWorker({ standalone: false });

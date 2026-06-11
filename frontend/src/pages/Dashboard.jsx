@@ -22,6 +22,7 @@ import BookmarksView from '../views/BookmarksView.jsx';
 import ActivityView from '../views/ActivityView.jsx';
 import HelpView from '../views/HelpView.jsx';
 import UserAccountView from '../views/UserAccountView.jsx';
+import UpdatesView from '../views/UpdatesView.jsx';
 import { parseUrlLines } from '../utils/format.js';
 import { initPlatformUrlRules } from '../utils/platformDetect.js';
 import { isMediaSiteUrl } from '../utils/mediaDetect.js';
@@ -1041,6 +1042,8 @@ export default function Dashboard() {
           {view === 'system' && <SystemHealthView />}
 
           {view === 'logs' && <LogsView />}
+
+          {view === 'updates' && <UpdatesView />}
 
           {view === 'security' && <SecurityView />}
 

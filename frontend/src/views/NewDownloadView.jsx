@@ -5,6 +5,7 @@ import { isMediaSiteUrl, isAgeGatedSite, getDownloadEngine, needsCookiesHint } f
 import { formatBytes, parseUrlLines } from '../utils/format.js';
 import ServerDownloadBanner from '../components/ServerDownloadBanner.jsx';
 import SectionEyebrow from '../components/SectionEyebrow.jsx';
+import MediaFormatPicker, { BulkMediaFormatPicker } from '../components/MediaFormatPicker.jsx';
 
 function SectionDivider({ label }) {
   return (
@@ -344,32 +345,11 @@ export default function NewDownloadView({
                 {bulkMode && bulkLineCount > 0 && (
                   <div className="bulk-media-options">
                     <p className="bulk-media-options-label">Media format (all media URLs)</p>
-                    <div className="media-options bulk-media-chips">
-                      <button
-                        type="button"
-                        className={`chip chip-best ${bulkMediaKind === 'video' && bulkFormatId === 'best' ? 'active' : ''}`}
-                        onClick={() => selectBulkFormat('best', 'video')}
-                      >
-                        Best video
-                      </button>
-                      {['1080', '720', '480', '360'].map((h) => (
-                        <button
-                          key={h}
-                          type="button"
-                          className={`chip ${bulkMediaKind === 'video' && bulkFormatId === h ? 'active' : ''}`}
-                          onClick={() => selectBulkFormat(h, 'video')}
-                        >
-                          {h}p
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        className={`chip chip-audio ${bulkMediaKind === 'audio' ? 'active' : ''}`}
-                        onClick={() => selectBulkFormat(null, 'audio')}
-                      >
-                        MP3 (best)
-                      </button>
-                    </div>
+                    <BulkMediaFormatPicker
+                      formatId={bulkFormatId}
+                      mediaKind={bulkMediaKind}
+                      onSelect={selectBulkFormat}
+                    />
                   </div>
                 )}
 
@@ -456,40 +436,11 @@ export default function NewDownloadView({
                       </span>
                     </label>
                   )}
-                  {probeInfo.videoQualities?.length > 0 && (
-                    <>
-                      <p className="media-label">Video (MP4)</p>
-                      <div className="media-options">
-                        <button type="button" className="chip chip-best" onClick={() => onQueueMedia('best', 'video')}>
-                          Best quality
-                        </button>
-                        {probeInfo.videoQualities.map((q) => (
-                          <button
-                            key={q.formatId}
-                            type="button"
-                            className="chip"
-                            onClick={() => onQueueMedia(q.formatId, 'video')}
-                          >
-                            {q.label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {probeInfo.audioAvailable && (
-                    <>
-                      <p className="media-label">Audio</p>
-                      <div className="media-options">
-                        <button
-                          type="button"
-                          className="chip chip-audio"
-                          onClick={() => onQueueMedia(null, 'audio')}
-                        >
-                          MP3 (best)
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <MediaFormatPicker
+                    probeInfo={probeInfo}
+                    onSelect={onQueueMedia}
+                    showHints
+                  />
                 </div>
               ) : (
                 <div className="media-picker media-picker--empty">

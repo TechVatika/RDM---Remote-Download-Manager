@@ -14,6 +14,7 @@ import {
   HiQuestionMarkCircle,
   HiUserCircle,
   HiDocumentText,
+  HiArrowUpCircle,
 } from 'react-icons/hi2';
 
 export const NAV_GROUPS = [
@@ -52,6 +53,7 @@ export const NAV_GROUPS = [
       { id: 'app-settings', label: 'App Settings', Icon: HiCog6Tooth },
       { id: 'system', label: 'System Health', Icon: HiCpuChip },
       { id: 'logs', label: 'Activity Logs', Icon: HiDocumentText },
+      { id: 'updates', label: 'Updates', Icon: HiArrowUpCircle },
       { id: 'security', label: 'Security', Icon: HiShieldCheck },
       { id: 'help', label: 'How It Works', Icon: HiQuestionMarkCircle },
     ],
@@ -74,6 +76,7 @@ export const VIEW_SUBTITLES = {
   'app-settings': 'Paths, connections, AI naming & preferences',
   system: 'Server health, disk space & engine status',
   logs: 'Live server log of downloads, queue & WARP events',
+  updates: 'GitHub updates, version info and update history',
   security: 'Active protections hardening your server',
   help: 'Quick start guide and download tips',
 };

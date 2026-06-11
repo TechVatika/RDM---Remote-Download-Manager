@@ -3752,6 +3752,196 @@
   box-shadow: inset 0 0 0 1px var(--dell-frame);
 }
 
+[data-design='dell-1996'] .media-format-picker--compact .media-label {
+  margin-top: 8px;
+}
+
+[data-design='dell-1996'] .media-format-picker--compact .media-label:first-of-type {
+  margin-top: 0;
+}
+
+[data-design='dell-1996'] .media-options--formats {
+  gap: 6px;
+}
+
+[data-design='dell-1996'] .chip-format-exact {
+  border-color: var(--tint-olive);
+}
+
+[data-design='dell-1996'] .chip-format-fallback {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+[data-design='dell-1996'] .chip-format-badge {
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+[data-design='dell-1996'] .chip-format-badge--dim {
+  opacity: 0.65;
+}
+
+[data-design='dell-1996'] .media-format-source-hint {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sky);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .media-label--sub {
+  margin-top: 12px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .media-format-note {
+  margin: 10px 0 0;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+/* ── Updates tab ── */
+[data-design='dell-1996'] .updates-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .updates-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+[data-design='dell-1996'] .update-versions-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+[data-design='dell-1996'] .update-version-card {
+  border: 1px solid var(--dell-frame);
+  padding: 12px 14px;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .update-version-card--highlight {
+  background: var(--tint-peach);
+  border-left: 4px solid var(--dell-red);
+}
+
+[data-design='dell-1996'] .update-version-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+[data-design='dell-1996'] .update-version-hash {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .update-version-msg {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+[data-design='dell-1996'] .update-version-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .updates-meta-card {
+  margin-top: 0;
+}
+
+[data-design='dell-1996'] .updates-changelog {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--dell-frame);
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+[data-design='dell-1996'] .updates-changelog-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--dell-frame) 20%, transparent);
+}
+
+[data-design='dell-1996'] .updates-changelog-item:last-child {
+  border-bottom: none;
+}
+
+[data-design='dell-1996'] .updates-changelog-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .updates-changelog-hash {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+}
+
+[data-design='dell-1996'] .updates-changelog-date {
+  font-size: 11px;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .updates-changelog-msg {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+[data-design='dell-1996'] .updates-changelog-author {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+[data-design='dell-1996'] .updates-log-console {
+  max-height: 320px;
+}
+
+[data-design='dell-1996'] .updates-empty {
+  margin: 0;
+  padding: 12px;
+}
+
+[data-design='dell-1996'] .spin {
+  animation: dell-spin 0.8s linear infinite;
+}
+
+@keyframes dell-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Download card misc */
 [data-design='dell-1996'] .download-thumb {
   border-radius: 0;
