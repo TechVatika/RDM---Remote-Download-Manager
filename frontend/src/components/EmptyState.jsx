@@ -18,9 +18,25 @@ export default function EmptyState({ icon: Icon = HiInboxArrowDown, title, descr
   );
 }
 
-export function StatCard({ label, value, accent, icon: Icon, className = '' }) {
+export function StatCard({
+  label,
+  value,
+  accent,
+  icon: Icon,
+  className = '',
+  onClick,
+  hint,
+}) {
+  const clickable = Boolean(onClick);
+  const Tag = clickable ? 'button' : 'div';
+
   return (
-    <div className={`stat-card ${accent} ${className}`.trim()}>
+    <Tag
+      type={clickable ? 'button' : undefined}
+      className={`stat-card ${accent} ${clickable ? 'stat-card-clickable' : ''} ${className}`.trim()}
+      onClick={onClick}
+      aria-label={clickable ? `${label}: ${value}. ${hint || 'View details'}` : undefined}
+    >
       <div className="stat-card-top">
         <span className="stat-label">{label}</span>
         {Icon && (
@@ -29,7 +45,8 @@ export function StatCard({ label, value, accent, icon: Icon, className = '' }) {
           </span>
         )}
       </div>
-      <strong>{value}</strong>
-    </div>
+      <strong className="stat-value">{value}</strong>
+      {clickable && hint && <span className="stat-card-hint">{hint}</span>}
+    </Tag>
   );
 }

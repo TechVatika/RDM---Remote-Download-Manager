@@ -7,6 +7,52 @@ const AI_PROVIDER = (process.env.AI_PROVIDER || 'auto').toLowerCase();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const AI_FETCH_TIMEOUT_MS = Number(process.env.AI_RENAME_TIMEOUT_MS) || 5000;
+const AI_POST_DOWNLOAD_TIMEOUT_MS = Number(process.env.AI_POST_DOWNLOAD_TIMEOUT_MS) || 6000;
+const AI_CIRCUIT_MS = Number(process.env.AI_CIRCUIT_BREAKER_MS) || 5 * 60 * 1000;
+
+const suggestionCache = new Map();
+const SUGGESTION_CACHE_MAX = 128;
+let aiCircuitOpenUntil = 0;
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = AI_FETCH_TIMEOUT_MS) {
+  return fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
+}
+
+function isAiCircuitOpen() {
+  return Date.now() < aiCircuitOpenUntil;
+}
+
+function tripAiCircuit() {
+  aiCircuitOpenUntil = Date.now() + AI_CIRCUIT_MS;
+}
+
+function isQuotaError(message = '') {
+  return /\b429\b|quota|rate.?limit|resource.?exhausted/i.test(message);
+}
+
+function cacheKey(ctx) {
+  return `${ctx.url}|${ctx.title || ''}|${ctx.originalName || ''}|${ctx.category}`;
+}
+
+/** Fast local naming — no API, used as default and fallback. */
+export function localSmartFilename(ctx) {
+  const ext = path.extname(ctx.originalName || '') || '.bin';
+  let base = '';
+
+  if (ctx.title) {
+    base = String(ctx.title)
+      .replace(/\s*\[[^\]]{4,}\]\s*$/g, '')
+      .replace(/\s*\([^)]{4,}\)\s*$/g, '')
+      .trim();
+  } else if (ctx.originalName) {
+    base = path.basename(ctx.originalName, ext);
+  }
+
+  base = sanitizeFilename(base || 'download').slice(0, 180);
+  if (!base) base = 'download';
+  return `${base}${ext}`;
+}
 
 const OPENAI_API_KEY = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || '';
 const OPENAI_API_BASE = (process.env.AI_API_BASE || 'https://api.openai.com/v1').replace(/\/$/, '');
@@ -85,21 +131,11 @@ export function applyFilenameRename(filePath, suggestedName) {
 }
 
 function buildPrompt(ctx) {
-  const lines = [
-    'Generate one descriptive filename for a downloaded file.',
-    'Reply with ONLY the filename (include extension). No quotes, markdown, or explanation.',
-    'Use clear Title Case, hyphens or spaces, max 120 characters before extension.',
-    'Keep the exact same file extension as the original.',
-    '',
-    `Original filename: ${ctx.originalName}`,
-    `URL: ${ctx.url}`,
-    `Category folder: ${ctx.category}`,
-  ];
-  if (ctx.title) lines.push(`Media title: ${ctx.title}`);
-  if (ctx.uploader) lines.push(`Uploader: ${ctx.uploader}`);
-  if (ctx.mediaKind) lines.push(`Type: ${ctx.mediaKind}`);
-  if (ctx.extractor) lines.push(`Source: ${ctx.extractor}`);
-  return lines.join('\n');
+  const ext = path.extname(ctx.originalName || '') || '.bin';
+  const parts = [`Ext: ${ext}`, `Category: ${ctx.category}`];
+  if (ctx.title) parts.push(`Title: ${ctx.title}`);
+  if (ctx.uploader) parts.push(`By: ${ctx.uploader}`);
+  return `Filename only (with ${ext}), max 100 chars, Title Case, no quotes:\n${parts.join('\n')}`;
 }
 
 function parseAiFilename(content, fallbackExt) {
@@ -118,9 +154,9 @@ function parseAiFilename(content, fallbackExt) {
   return name;
 }
 
-async function callGemini(userPrompt) {
+async function callGemini(userPrompt, timeoutMs = AI_FETCH_TIMEOUT_MS) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -131,11 +167,11 @@ async function callGemini(userPrompt) {
       },
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
       generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 80,
+        temperature: 0.2,
+        maxOutputTokens: 48,
       },
     }),
-  });
+  }, timeoutMs);
 
   if (!res.ok) {
     const errText = await res.text();
@@ -146,8 +182,8 @@ async function callGemini(userPrompt) {
   return data.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '';
 }
 
-async function callOpenAi(userPrompt) {
-  const res = await fetch(`${OPENAI_API_BASE}/chat/completions`, {
+async function callOpenAi(userPrompt, timeoutMs = AI_FETCH_TIMEOUT_MS) {
+  const res = await fetchWithTimeout(`${OPENAI_API_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -155,8 +191,8 @@ async function callOpenAi(userPrompt) {
     },
     body: JSON.stringify({
       model: OPENAI_MODEL,
-      temperature: 0.3,
-      max_tokens: 80,
+      temperature: 0.2,
+      max_tokens: 48,
       messages: [
         {
           role: 'system',
@@ -166,7 +202,7 @@ async function callOpenAi(userPrompt) {
         { role: 'user', content: userPrompt },
       ],
     }),
-  });
+  }, timeoutMs);
 
   if (!res.ok) {
     const errText = await res.text();
@@ -177,24 +213,48 @@ async function callOpenAi(userPrompt) {
   return data.choices?.[0]?.message?.content || '';
 }
 
-export async function suggestFilename(ctx) {
-  const ext = path.extname(ctx.originalName || '') || '.bin';
-  const fallback = ctx.title
-    ? sanitizeFilename(`${ctx.title}${ext}`)
-    : sanitizeFilename(ctx.originalName || `download${ext}`);
+export async function suggestFilename(ctx, { useAi = true, timeoutMs = AI_FETCH_TIMEOUT_MS } = {}) {
+  const fallback = localSmartFilename(ctx);
+  const key = cacheKey(ctx);
+
+  const cached = suggestionCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.filename;
+  }
+
+  if (!useAi) {
+    return fallback;
+  }
 
   const backend = resolveBackend();
-  if (!backend) return fallback;
+  if (!backend || isAiCircuitOpen()) {
+    return fallback;
+  }
 
   const prompt = buildPrompt(ctx);
+  const ext = path.extname(ctx.originalName || '') || '.bin';
 
   try {
-    const content =
-      backend === 'gemini' ? await callGemini(prompt) : await callOpenAi(prompt);
+    const aiCall =
+      backend === 'gemini'
+        ? callGemini(prompt, timeoutMs)
+        : callOpenAi(prompt, timeoutMs);
+    const content = await aiCall;
     const parsed = parseAiFilename(content, ext);
-    return parsed || fallback;
+    const filename = parsed || fallback;
+
+    if (suggestionCache.size >= SUGGESTION_CACHE_MAX) {
+      const first = suggestionCache.keys().next().value;
+      suggestionCache.delete(first);
+    }
+    suggestionCache.set(key, { filename, expiresAt: Date.now() + 10 * 60 * 1000 });
+
+    return filename;
   } catch (err) {
-    console.warn(`[ai-rename/${backend}] fallback:`, err.message);
+    if (isQuotaError(err.message)) {
+      tripAiCircuit();
+    }
+    console.warn(`[ai-rename/${backend}] fallback:`, err.message?.slice(0, 120));
     return fallback;
   }
 }
@@ -205,19 +265,28 @@ export async function maybeRenameDownload(row, result) {
   if (!isAiRenameEnabled()) return result;
 
   const originalName = path.basename(result.filePath);
-  const suggested = await suggestFilename({
-    url: row.url,
-    title: row.title || null,
-    category: row.category,
-    mediaKind: row.media_kind || null,
-    originalName,
-    uploader: row.uploader || null,
-    extractor: row.extractor || null,
-  });
 
-  const newPath = applyFilenameRename(result.filePath, suggested);
-  if (newPath !== result.filePath) {
-    console.log(`[ai-rename] #${row.id}: ${originalName} -> ${path.basename(newPath)}`);
+  try {
+    const suggested = await suggestFilename(
+      {
+        url: row.url,
+        title: row.title || null,
+        category: row.category,
+        mediaKind: row.media_kind || null,
+        originalName,
+        uploader: row.uploader || null,
+        extractor: row.extractor || null,
+      },
+      { useAi: true, timeoutMs: AI_POST_DOWNLOAD_TIMEOUT_MS },
+    );
+
+    const newPath = applyFilenameRename(result.filePath, suggested);
+    if (newPath !== result.filePath) {
+      console.log(`[ai-rename] #${row.id}: ${originalName} -> ${path.basename(newPath)}`);
+    }
+    return { ...result, filePath: newPath };
+  } catch (err) {
+    console.warn(`[ai-rename] #${row.id} skipped, keeping original name:`, err.message);
+    return result;
   }
-  return { ...result, filePath: newPath };
 }

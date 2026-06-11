@@ -6,8 +6,6 @@ import Sidebar from '../components/Sidebar.jsx';
 import MobileBottomNav from '../components/MobileBottomNav.jsx';
 import DownloadCard from '../components/DownloadCard.jsx';
 import PlatformSettings from '../components/PlatformSettings.jsx';
-import BackgroundDecor from '../components/BackgroundDecor.jsx';
-import ThemeToggle from '../components/ThemeToggle.jsx';
 import GlobalSearch from '../components/GlobalSearch.jsx';
 import { getNavLabel, getNavSubtitle } from '../config/nav.js';
 import OverviewView from '../views/OverviewView.jsx';
@@ -32,7 +30,9 @@ import { copyToClipboard } from '../utils/clipboard.js';
 import { desktopNotify, requestNotifyPermission } from '../utils/notify.js';
 import { toastSuccess, toastError, confirmAction, showHotkeys, promptCredentials } from '../utils/swal.js';
 import ServerDownloadBanner from '../components/ServerDownloadBanner.jsx';
+import DellFooter from '../components/DellFooter.jsx';
 import './Dashboard.css';
+import '../styles/dell-sidebar.css';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -48,8 +48,9 @@ export default function Dashboard() {
   };
 
   const [view, setView] = useState('overview');
+  const [historyFilter, setHistoryFilter] = useState('all');
   const [url, setUrl] = useState('');
-  const [category, setCategory] = useState('movies');
+  const category = 'general';
   const [downloads, setDownloads] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -57,7 +58,7 @@ export default function Dashboard() {
   const [probing, setProbing] = useState(false);
   const [probeInfo, setProbeInfo] = useState(null);
   const [filename, setFilename] = useState('');
-  const [connections, setConnections] = useState(16);
+  const [connections, setConnections] = useState(4);
   const [platformData, setPlatformData] = useState(null);
   const [platformSearch, setPlatformSearch] = useState('');
   const [platformCategory, setPlatformCategory] = useState('all');
@@ -65,8 +66,16 @@ export default function Dashboard() {
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [dragOver, setDragOver] = useState(false);
-  const [aiRename, setAiRename] = useState(true);
+  const [aiRename, setAiRename] = useState(false);
   const [suggestingName, setSuggestingName] = useState(false);
+  const [resolvingName, setResolvingName] = useState(false);
+  const [bulkPreview, setBulkPreview] = useState(null);
+  const [bulkPreviewLoading, setBulkPreviewLoading] = useState(false);
+  const [bulkFormatId, setBulkFormatId] = useState('best');
+  const [bulkMediaKind, setBulkMediaKind] = useState('video');
+  const [bulkExpandPlaylists, setBulkExpandPlaylists] = useState(true);
+  const [expandPlaylist, setExpandPlaylist] = useState(true);
+  const [queueingAllBookmarks, setQueueingAllBookmarks] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [systemInfo, setSystemInfo] = useState(null);
   const speedSamples = useRef(new Map());
@@ -74,7 +83,11 @@ export default function Dashboard() {
   const notifyReady = useRef(false);
   const filenameTouched = useRef(false);
   const suggestRequestId = useRef(0);
+  const resolveRequestId = useRef(0);
+  const probeRequestId = useRef(0);
+  const bulkPreviewRequestId = useRef(0);
   const prevUrlRef = useRef('');
+  const contentRef = useRef(null);
 
   const isValidUrl = (value) => {
     try {
@@ -87,10 +100,19 @@ export default function Dashboard() {
 
   const isLikelyMediaUrl = (value) => isMediaSiteUrl(value);
 
-  const handleNavigate = (id) => {
+  const handleNavigate = (id, options = {}) => {
+    if (id === 'history') {
+      setHistoryFilter(options.filter || 'all');
+    }
     setView(id);
     setMobileNavOpen(false);
   };
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (el) el.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }, [view]);
 
   const loadPlatforms = useCallback(async () => {
     const res = await apiFetch('/api/platforms');
@@ -241,8 +263,9 @@ export default function Dashboard() {
   }, [downloads]);
 
   useEffect(() => {
-    if (appSettings?.aiRename) {
-      setAiRename(appSettings.aiRename.enabled);
+    // AI rename is opt-in — server filename detection is fast and default.
+    if (appSettings?.aiRename?.enabled === false) {
+      setAiRename(false);
     }
   }, [appSettings?.aiRename?.enabled]);
 
@@ -264,6 +287,42 @@ export default function Dashboard() {
     setProbeInfo(null);
   }, [url]);
 
+  const resolveFilenameFromServer = useCallback(
+    async ({ silent = false } = {}) => {
+      const trimmed = url.trim();
+      if (!trimmed || !isValidUrl(trimmed) || filenameTouched.current) return;
+      if (isLikelyMediaUrl(trimmed)) return;
+
+      const requestId = ++resolveRequestId.current;
+      setResolvingName(true);
+      try {
+        const res = await apiFetch('/api/downloads/resolve-filename', {
+          method: 'POST',
+          body: JSON.stringify({ url: trimmed }),
+        });
+        const data = await res.json();
+        if (requestId !== resolveRequestId.current) return;
+        if (filenameTouched.current) return;
+        if (!res.ok) throw new Error(data.error || 'Could not resolve filename');
+        if (data.filename) {
+          setFilename(data.filename);
+          if (!silent) {
+            toastSuccess(data.source === 'server' ? 'Filename from server' : 'Filename from URL');
+          }
+        }
+      } catch (err) {
+        if (requestId === resolveRequestId.current && !silent) {
+          toastError(err.message);
+        }
+      } finally {
+        if (requestId === resolveRequestId.current) {
+          setResolvingName(false);
+        }
+      }
+    },
+    [url],
+  );
+
   const suggestFilenameForUrl = useCallback(
     async ({ silent = false } = {}) => {
       const trimmed = url.trim();
@@ -280,6 +339,7 @@ export default function Dashboard() {
             category,
             type: isMedia ? 'media' : 'http',
             title: probeInfo?.title || null,
+            use_ai: true,
           }),
         });
         const data = await res.json();
@@ -288,7 +348,9 @@ export default function Dashboard() {
         if (!res.ok) throw new Error(data.error || 'Could not suggest filename');
         setFilename(data.filename);
         if (!silent) {
-          toastSuccess(data.aiUsed ? 'AI suggested a filename' : 'Suggested filename');
+          toastSuccess(
+            data.aiUsed ? 'AI suggested a filename' : 'Instant local filename (no API wait)',
+          );
         }
       } catch (err) {
         if (requestId === suggestRequestId.current && !silent) {
@@ -305,27 +367,99 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (bulkMode || view !== 'new') return;
-    if (!aiRename || !appSettings?.aiRename?.enabled) return;
     if (filenameTouched.current) return;
 
     const trimmed = url.trim();
     if (!trimmed || !isValidUrl(trimmed)) return;
 
     const timer = setTimeout(() => {
-      suggestFilenameForUrl({ silent: true });
-    }, 650);
+      if (isLikelyMediaUrl(trimmed)) return;
+      resolveFilenameFromServer({ silent: true });
+    }, 450);
 
     return () => clearTimeout(timer);
-  }, [
-    url,
-    category,
-    probeInfo?.title,
-    aiRename,
-    appSettings?.aiRename?.enabled,
-    bulkMode,
-    view,
-    suggestFilenameForUrl,
-  ]);
+  }, [url, bulkMode, view, resolveFilenameFromServer]);
+
+  const runProbe = useCallback(
+    async ({ silent = false } = {}) => {
+      const trimmed = url.trim();
+      if (!trimmed || !isValidUrl(trimmed) || !isLikelyMediaUrl(trimmed)) return;
+
+      const requestId = ++probeRequestId.current;
+      setProbing(true);
+      if (!silent) setError('');
+      try {
+        const res = await apiFetch('/api/downloads/probe', {
+          method: 'POST',
+          body: JSON.stringify({ url: trimmed }),
+        });
+        const data = await res.json();
+        if (requestId !== probeRequestId.current) return;
+        if (!res.ok) throw new Error(data.error || 'Could not read media info');
+        setProbeInfo(data);
+        if (!silent) toastSuccess('Formats loaded');
+      } catch (err) {
+        if (requestId === probeRequestId.current) {
+          if (!silent) {
+            setError(err.message);
+            toastError(err.message);
+          }
+        }
+      } finally {
+        if (requestId === probeRequestId.current) {
+          setProbing(false);
+        }
+      }
+    },
+    [url],
+  );
+
+  useEffect(() => {
+    if (bulkMode || view !== 'new') return;
+
+    const trimmed = url.trim();
+    if (!trimmed || !isValidUrl(trimmed) || !isLikelyMediaUrl(trimmed)) return;
+
+    const timer = setTimeout(() => {
+      runProbe({ silent: true });
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [url, bulkMode, view, runProbe]);
+
+  useEffect(() => {
+    if (!bulkMode || view !== 'new') {
+      setBulkPreview(null);
+      return undefined;
+    }
+
+    const urls = parseUrlLines(bulkText);
+    if (!urls.length) {
+      setBulkPreview(null);
+      return undefined;
+    }
+
+    const requestId = ++bulkPreviewRequestId.current;
+    const timer = setTimeout(async () => {
+      setBulkPreviewLoading(true);
+      try {
+        const res = await apiFetch('/api/downloads/bulk/preview', {
+          method: 'POST',
+          body: JSON.stringify({ urls, expand_playlists: bulkExpandPlaylists }),
+        });
+        const data = await res.json();
+        if (requestId !== bulkPreviewRequestId.current) return;
+        if (res.ok) setBulkPreview(data);
+        else setBulkPreview(null);
+      } catch {
+        if (requestId === bulkPreviewRequestId.current) setBulkPreview(null);
+      } finally {
+        if (requestId === bulkPreviewRequestId.current) setBulkPreviewLoading(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [bulkText, bulkMode, view, bulkExpandPlaylists]);
 
   useEffect(() => {
     if ((view === 'help' || view === 'platforms' || view === 'app-settings') && !platformData) {
@@ -347,12 +481,25 @@ export default function Dashboard() {
         if (!urls.length) throw new Error('Add at least one URL (one per line)');
         const res = await apiFetch('/api/downloads/bulk', {
           method: 'POST',
-          body: JSON.stringify({ urls, category, connections: Number(connections) || 16, ai_rename: aiRename }),
+          body: JSON.stringify({
+            urls,
+            category,
+            connections: Number(connections) || 4,
+            ai_rename: aiRename,
+            format_id: bulkMediaKind === 'audio' ? null : bulkFormatId,
+            media_kind: bulkMediaKind,
+            expand_playlists: bulkExpandPlaylists,
+          }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Bulk queue failed');
         setBulkText('');
-        toastSuccess(`${data.count} download(s) queued on server — safe to close this tab`);
+        setBulkPreview(null);
+        toastSuccess(
+          data.expanded
+            ? `${data.count} download(s) queued (playlists expanded) — safe to close this tab`
+            : `${data.count} download(s) queued on server — safe to close this tab`,
+        );
         setView('active');
         await refresh();
         return;
@@ -361,6 +508,7 @@ export default function Dashboard() {
       const trimmedUrl = url.trim();
       const useMedia = isMediaSiteUrl(trimmedUrl);
 
+      const playlistVideos = probeInfo?.playlist?.entryCount;
       const res = await apiFetch('/api/downloads', {
         method: 'POST',
         body: JSON.stringify({
@@ -369,16 +517,24 @@ export default function Dashboard() {
           type: useMedia ? 'media' : 'http',
           format_id: useMedia ? 'best' : undefined,
           media_kind: useMedia ? 'video' : undefined,
-          connections: useMedia ? undefined : Number(connections) || 16,
+          connections: useMedia ? undefined : Number(connections) || 4,
           filename: useMedia ? null : filename.trim() || null,
           ai_rename: aiRename && !filename.trim(),
+          expand_playlist: useMedia && expandPlaylist && playlistVideos > 1,
+          title: useMedia ? probeInfo?.title || null : undefined,
+          thumbnail: useMedia ? probeInfo?.thumbnail || null : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to queue download');
       setUrl('');
       setFilename('');
-      toastSuccess('Queued on server — safe to close this tab or shut your laptop');
+      setProbeInfo(null);
+      toastSuccess(
+        data.playlist
+          ? `${data.count} videos from playlist queued — safe to close this tab`
+          : 'Queued on server — safe to close this tab or shut your laptop',
+      );
       setView('active');
       await refresh();
     } catch (err) {
@@ -411,35 +567,22 @@ export default function Dashboard() {
 
   const handleSuggestName = () => suggestFilenameForUrl({ silent: false });
 
+  const handleResolveFilename = () => resolveFilenameFromServer({ silent: false });
+
   const handleFilenameChange = (value) => {
     filenameTouched.current = true;
     setFilename(value);
   };
 
   const handleProbe = async () => {
-    setProbing(true);
-    setError('');
     setProbeInfo(null);
-    try {
-      const res = await apiFetch('/api/downloads/probe', {
-        method: 'POST',
-        body: JSON.stringify({ url: url.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not read media info');
-      setProbeInfo(data);
-      toastSuccess('Formats loaded');
-    } catch (err) {
-      setError(err.message);
-      toastError(err.message);
-    } finally {
-      setProbing(false);
-    }
+    await runProbe({ silent: false });
   };
 
   const queueMedia = async (formatId, mediaKind) => {
     setError('');
     requestNotifyPermission();
+    const playlistVideos = probeInfo?.playlist?.entryCount;
     try {
       const res = await apiFetch('/api/downloads', {
         method: 'POST',
@@ -452,13 +595,18 @@ export default function Dashboard() {
           title: probeInfo?.title || null,
           thumbnail: probeInfo?.thumbnail || null,
           ai_rename: aiRename,
+          expand_playlist: expandPlaylist && playlistVideos > 1,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to queue download');
       setUrl('');
       setProbeInfo(null);
-      toastSuccess('Queued on server — safe to close this tab');
+      toastSuccess(
+        data.playlist
+          ? `${data.count} videos from playlist queued — safe to close this tab`
+          : 'Queued on server — safe to close this tab',
+      );
       setView('active');
       await refresh();
     } catch (err) {
@@ -488,13 +636,16 @@ export default function Dashboard() {
 
   const handleResume = async (id) => {
     await apiFetch(`/api/downloads/${id}/resume`, { method: 'POST' });
-    toastSuccess('Download resumed');
+    toastSuccess('Resuming on server — safe to close this tab');
+    setView('active');
     refresh();
   };
 
-  const handleRetry = async (id) => {
-    await apiFetch(`/api/downloads/${id}/retry`, { method: 'POST' });
-    toastSuccess('Download re-queued');
+  const handleRetry = async (id, { fresh = false } = {}) => {
+    const suffix = fresh ? '?fresh=1' : '';
+    await apiFetch(`/api/downloads/${id}/retry${suffix}`, { method: 'POST' });
+    toastSuccess(fresh ? 'Download restarted from scratch' : 'Download re-queued on server');
+    setView('active');
     refresh();
   };
 
@@ -602,32 +753,69 @@ export default function Dashboard() {
 
   const handlePickRecent = (r) => {
     setUrl(r.url);
-    setCategory(r.category || 'general');
     setProbeInfo(null);
   };
 
   const handleQueueBookmark = async (bookmark) => {
     setLoading(true);
     try {
+      const trimmed = bookmark.url?.trim();
+      const useMedia = isMediaSiteUrl(trimmed);
       const res = await apiFetch('/api/downloads', {
         method: 'POST',
         body: JSON.stringify({
-          url: bookmark.url,
+          url: trimmed,
           category: bookmark.category || 'general',
-          type: 'http',
-          connections: Number(connections) || 16,
+          type: useMedia ? 'media' : 'http',
+          format_id: useMedia ? 'best' : undefined,
+          media_kind: useMedia ? 'video' : undefined,
+          connections: useMedia ? undefined : Number(connections) || 4,
           ai_rename: aiRename,
+          expand_playlist: useMedia && bulkExpandPlaylists,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to queue');
-      toastSuccess('Queued on server — safe to close this tab');
+      toastSuccess(
+        data.playlist
+          ? `${data.count} videos from playlist queued`
+          : 'Queued on server — safe to close this tab',
+      );
       setView('active');
       refresh();
     } catch (err) {
       toastError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQueueAllBookmarks = async (bookmarks) => {
+    const urls = bookmarks.map((b) => b.url?.trim()).filter(Boolean);
+    if (!urls.length) return;
+    setQueueingAllBookmarks(true);
+    try {
+      const res = await apiFetch('/api/downloads/bulk', {
+        method: 'POST',
+        body: JSON.stringify({
+          urls,
+          category: bookmarks[0]?.category || 'general',
+          connections: Number(connections) || 4,
+          ai_rename: aiRename,
+          format_id: bulkMediaKind === 'audio' ? null : bulkFormatId,
+          media_kind: bulkMediaKind,
+          expand_playlists: bulkExpandPlaylists,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Bulk queue failed');
+      toastSuccess(`${data.count} bookmark(s) queued on server`);
+      setView('active');
+      refresh();
+    } catch (err) {
+      toastError(err.message);
+    } finally {
+      setQueueingAllBookmarks(false);
     }
   };
 
@@ -695,7 +883,13 @@ export default function Dashboard() {
       />
 
       <div className="dashboard-main">
-        <BackgroundDecor />
+        <div className="dell-top-banner" role="banner">
+          <div className="dell-top-banner-copy">
+            <strong>REMOTE DOWNLOADS. ONLINE.</strong>
+            <span>Queue files on your home server — safe to close this tab or shut down your PC.</span>
+          </div>
+          <span className="dell-buy-sticker">QUEUE a FILE</span>
+        </div>
         <header className="topbar">
           <div className="topbar-left">
             <button
@@ -719,7 +913,6 @@ export default function Dashboard() {
                 <span className="topbar-cta-text">New download</span>
               </button>
             )}
-            <ThemeToggle />
             <div className="live-badge">
               <span className="live-dot" />
               <span className="live-badge-text">Live</span>
@@ -727,7 +920,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="dashboard-content" key={view}>
+        <div className="dashboard-content" key={view} ref={contentRef}>
           {view === 'overview' && (
             <OverviewView
               user={user}
@@ -752,8 +945,6 @@ export default function Dashboard() {
               setUrl={setUrl}
               bulkText={bulkText}
               setBulkText={setBulkText}
-              category={category}
-              setCategory={setCategory}
               filename={filename}
               setFilename={handleFilenameChange}
               connections={connections}
@@ -763,6 +954,17 @@ export default function Dashboard() {
               loading={loading}
               probing={probing}
               suggestingName={suggestingName}
+              resolvingName={resolvingName}
+              bulkPreview={bulkPreview}
+              bulkPreviewLoading={bulkPreviewLoading}
+              bulkFormatId={bulkFormatId}
+              setBulkFormatId={setBulkFormatId}
+              bulkMediaKind={bulkMediaKind}
+              setBulkMediaKind={setBulkMediaKind}
+              bulkExpandPlaylists={bulkExpandPlaylists}
+              setBulkExpandPlaylists={setBulkExpandPlaylists}
+              expandPlaylist={expandPlaylist}
+              setExpandPlaylist={setExpandPlaylist}
               error={error}
               probeInfo={probeInfo}
               appSettings={appSettings}
@@ -771,6 +973,7 @@ export default function Dashboard() {
               onPasteClipboard={handlePasteClipboard}
               onDrop={handleDrop}
               onSuggestName={handleSuggestName}
+              onResolveFilename={handleResolveFilename}
               onProbe={handleProbe}
               onQueueMedia={queueMedia}
               onSaveBookmark={handleSaveBookmark}
@@ -791,6 +994,7 @@ export default function Dashboard() {
           {view === 'history' && (
             <HistoryView
               history={history}
+              initialFilter={historyFilter}
               onClearHistory={handleClearHistory}
               onRetryFailed={handleRetryFailed}
               renderDownloadItem={renderDownloadItem}
@@ -798,7 +1002,12 @@ export default function Dashboard() {
           )}
 
           {view === 'bookmarks' && (
-            <BookmarksView onQueueBookmark={handleQueueBookmark} onNavigate={handleNavigate} />
+            <BookmarksView
+              onQueueBookmark={handleQueueBookmark}
+              onQueueAllBookmarks={handleQueueAllBookmarks}
+              onNavigate={handleNavigate}
+              queueingAll={queueingAllBookmarks}
+            />
           )}
 
           {view === 'activity' && (
@@ -838,6 +1047,8 @@ export default function Dashboard() {
           {view === 'help' && (
             <HelpView appSettings={appSettings} onNavigate={handleNavigate} />
           )}
+
+          <DellFooter onNavigate={handleNavigate} />
         </div>
 
         <MobileBottomNav

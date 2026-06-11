@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { HiUserCircle, HiShieldCheck } from 'react-icons/hi2';
+import { HiShieldCheck } from 'react-icons/hi2';
 import { apiFetch, setToken } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { toastSuccess, toastError } from '../utils/swal.js';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -60,10 +61,8 @@ export default function UserAccountView() {
 
   return (
     <section className="panel settings-panel account-panel">
-      <h2>
-        <HiUserCircle size={24} aria-hidden />
-        My account
-      </h2>
+      <SectionEyebrow title="MY ACCOUNT" tint="periwinkle" />
+      <div className="panel-body">
       <p className="settings-desc">
         Manage your RDM login. Your session stays active after changing your password.
       </p>
@@ -88,7 +87,7 @@ export default function UserAccountView() {
       </div>
 
       <div className="auth-form-block">
-        <h3>
+        <h3 className="account-block-title">
           <HiShieldCheck size={20} aria-hidden />
           Change password
         </h3>
@@ -137,6 +136,7 @@ export default function UserAccountView() {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </section>
   );

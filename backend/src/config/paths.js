@@ -1,37 +1,34 @@
 import fs from 'fs';
+import fsp from 'fs/promises';
 import path from 'path';
 
-/** Staging area — downloads land here first, then move to final storage on completion. */
-const tempBase = process.env.DOWNLOAD_TEMP_PATH || process.env.DOWNLOAD_BASE_PATH || '/mnt/4tb-1/RDM/downloads';
+/** Staging area — active downloads land here, then move to final storage on completion. */
+export const tempBase =
+  process.env.DOWNLOAD_TEMP_PATH || process.env.DOWNLOAD_BASE_PATH || '/mnt/4tb-1/RDM/downloads';
 
-/** Permanent library location after a download finishes. */
-const finalBase =
+/** Permanent library after a download finishes. */
+export const finalBase =
   process.env.DOWNLOAD_FINAL_PATH || '/mnt/4tb/ENTERTAINMENT/RDM DOWNLOADS';
 
+/** @deprecated Category folders removed — all downloads use flat staging/final paths. */
 export const destinationProfiles = {
-  general: path.join(tempBase, 'general'),
-  movies: path.join(tempBase, 'movies'),
-  software: path.join(tempBase, 'software'),
+  general: tempBase,
+  movies: tempBase,
+  software: tempBase,
 };
 
-const finalProfiles = {
-  general: path.join(finalBase, 'general'),
-  movies: path.join(finalBase, 'movies'),
-  software: path.join(finalBase, 'software'),
-};
-
-export function resolveDestination(category) {
-  return destinationProfiles[category] ?? destinationProfiles.general;
+export function resolveDestination(_category) {
+  return tempBase;
 }
 
-export function resolveFinalDestination(category) {
-  return finalProfiles[category] ?? finalProfiles.general;
+export function resolveFinalDestination(_category) {
+  return finalBase;
 }
 
 /** Move a completed file from staging into the final library folder. */
-export function finalizeDownloadPath(stagingPath, category) {
-  const finalDir = resolveFinalDestination(category);
-  fs.mkdirSync(finalDir, { recursive: true });
+export async function finalizeDownloadPath(stagingPath, _category) {
+  const finalDir = finalBase;
+  await fsp.mkdir(finalDir, { recursive: true });
 
   const base = path.basename(stagingPath);
   const ext = path.extname(base);
@@ -44,8 +41,15 @@ export function finalizeDownloadPath(stagingPath, category) {
     n += 1;
   }
 
-  fs.renameSync(stagingPath, dest);
+  try {
+    await fsp.rename(stagingPath, dest);
+  } catch (err) {
+    if (err.code === 'EXDEV') {
+      await fsp.copyFile(stagingPath, dest);
+      await fsp.unlink(stagingPath).catch(() => {});
+    } else {
+      throw err;
+    }
+  }
   return dest;
 }
-
-export { tempBase, finalBase };

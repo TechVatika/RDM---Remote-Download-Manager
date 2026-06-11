@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { HiArrowPath, HiTrash, HiArrowDownTray } from 'react-icons/hi2';
 import { apiFetch } from '../api/client.js';
 import { confirmAction, toastSuccess, toastError } from '../utils/swal.js';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
 
 const LEVELS = ['all', 'debug', 'info', 'warn', 'error'];
 
@@ -93,26 +94,30 @@ export default function LogsView() {
   };
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h2>Activity logs</h2>
-        <div className="logs-actions">
-          <label className="logs-auto">
-            <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
-            Auto-refresh
-          </label>
-          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
-            <HiArrowPath /> Refresh
-          </button>
-          <button type="button" className="btn-secondary" onClick={onExport} disabled={!entries.length}>
-            <HiArrowDownTray /> Export
-          </button>
-          <button type="button" className="btn-danger" onClick={onClear}>
-            <HiTrash /> Clear
-          </button>
-        </div>
-      </div>
+    <section className="panel panel-logs">
+      <SectionEyebrow
+        title="ACTIVITY LOGS"
+        tint="olive"
+        action={(
+          <div className="logs-actions">
+            <label className="logs-auto">
+              <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+              Auto-refresh
+            </label>
+            <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+              <HiArrowPath /> Refresh
+            </button>
+            <button type="button" className="btn-secondary" onClick={onExport} disabled={!entries.length}>
+              <HiArrowDownTray /> Export
+            </button>
+            <button type="button" className="btn-danger" onClick={onClear}>
+              <HiTrash /> Clear
+            </button>
+          </div>
+        )}
+      />
 
+      <div className="panel-body">
       <p className="settings-desc">
         Server-side events for downloads, the 18+ queue, Cloudflare WARP on/off, and the API. Logs
         from the worker and API processes are merged here.
@@ -171,6 +176,7 @@ export default function LogsView() {
             </div>
           ))
         )}
+      </div>
       </div>
     </section>
   );

@@ -9,6 +9,26 @@ import {
 import { downloadDisplayName } from '../utils/downloadDisplay.js';
 import PlatformIcon from './PlatformIcon.jsx';
 import { detectPlatformFromUrl } from '../utils/platformIcons.js';
+import { categoryRibbonTint } from '../utils/categoryTint.js';
+
+function formatDuration(ms) {
+  if (!ms || ms <= 0) return '—';
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="detail-cell">
+      <span className="detail-label">{label}</span>
+      <strong className="detail-value">{value}</strong>
+    </div>
+  );
+}
 
 export default function DownloadCard({
   item,
@@ -26,10 +46,23 @@ export default function DownloadCard({
   const platformName = detectPlatformFromUrl(item.url);
   const isActive = ['queued', 'downloading', 'paused'].includes(item.status);
   const needsAuth = item.status === 'failed' && Boolean(Number(item.needs_auth));
+  const canResume = Boolean(item.can_resume);
+  const hasPartial =
+    canResume ||
+    (Number(item.bytes_downloaded) > 0 && Number(item.progress) > 0 && Number(item.progress) < 100);
   const displayName = downloadDisplayName(item);
+  const bytesDone = Number(item.bytes_downloaded) || 0;
+  const bytesTotal = Number(item.file_size) || 0;
+  const progressPct = Number(item.progress) || 0;
+  const ribbonTint = categoryRibbonTint(item.category);
+  const isFresh =
+    item.status === 'queued' &&
+    item.created_at &&
+    Date.now() - new Date(item.created_at).getTime() < 15 * 60 * 1000;
 
   return (
-    <li className="download-item">
+    <li className={`download-item ribbon-tint-${ribbonTint}`}>
+      {isFresh && <span className="dell-new-sticker" aria-hidden>NEW!</span>}
       <div className="download-item-top">
         {item.thumbnail ? (
           <img src={item.thumbnail} alt="" className="download-thumb" />
@@ -65,27 +98,30 @@ export default function DownloadCard({
         </div>
       </div>
 
-      {isActive && (
+      {(isActive || hasPartial) && (
         <>
           <div className="progress-bar">
             <div
               className="progress-fill"
-              style={{ width: `${Number(item.progress) || 0}%` }}
+              style={{ width: `${progressPct}%` }}
             />
           </div>
           <div className="download-stats">
-            <span>{Number(item.progress).toFixed(1)}%</span>
-            <span>{formatBytes(item.bytes_downloaded)} / {formatBytes(item.file_size)}</span>
+            <span>{progressPct.toFixed(1)}%</span>
+            <span>
+              {formatBytes(bytesDone)}
+              {bytesTotal > 0 ? ` / ${formatBytes(bytesTotal)}` : ''}
+            </span>
             {item.status === 'downloading' && (
               <>
                 <span>{formatSpeed(speed)}</span>
                 <span>
-                  ETA {formatEta(
-                    (Number(item.file_size) || 0) - (Number(item.bytes_downloaded) || 0),
-                    speed,
-                  )}
+                  ETA {formatEta(bytesTotal - bytesDone, speed)}
                 </span>
               </>
+            )}
+            {item.status === 'queued' && bytesTotal > 0 && (
+              <span className="stat-muted">Waiting for worker…</span>
             )}
           </div>
         </>
@@ -103,7 +139,15 @@ export default function DownloadCard({
       )}
 
       {item.error_message && !needsAuth && (
-        <p className="download-error">{item.error_message}</p>
+        <p
+          className={
+            ['queued', 'downloading'].includes(item.status)
+              ? 'download-info'
+              : 'download-error'
+          }
+        >
+          {item.error_message}
+        </p>
       )}
 
       {needsAuth && (
@@ -113,10 +157,54 @@ export default function DownloadCard({
         </div>
       )}
 
-      {item.status === 'completed' && (
-        <div className="download-stats">
-          <span>{formatBytes(item.file_size)}</span>
-          <span>{formatDate(item.completed_at)}</span>
+      {item.status === 'completed' && (() => {
+        const created = item.created_at ? new Date(item.created_at) : null;
+        const done = item.completed_at ? new Date(item.completed_at) : null;
+        const durMs = created && done ? done - created : 0;
+        const size = Number(item.file_size) || 0;
+        const avg = durMs > 0 && size > 0 ? size / (durMs / 1000) : 0;
+        return (
+          <div className="download-details">
+            <DetailRow label="Size" value={formatBytes(size)} />
+            <DetailRow label="Added" value={formatDate(item.created_at)} />
+            <DetailRow label="Finished" value={formatDate(item.completed_at)} />
+            <DetailRow label="Duration" value={formatDuration(durMs)} />
+            <DetailRow label="Avg speed" value={avg ? formatSpeed(avg) : '—'} />
+            {item.connections ? <DetailRow label="Connections" value={`${item.connections}×`} /> : null}
+          </div>
+        );
+      })()}
+
+      {['failed', 'cancelled', 'paused'].includes(item.status) && (
+        <div className="download-details">
+          <DetailRow label="Added" value={formatDate(item.created_at)} />
+          <DetailRow label="Last update" value={formatDate(item.updated_at)} />
+          {bytesTotal > 0 && <DetailRow label="File size" value={formatBytes(bytesTotal)} />}
+          {bytesDone > 0 && (
+            <DetailRow
+              label="Downloaded"
+              value={`${formatBytes(bytesDone)} (${progressPct.toFixed(1)}%)`}
+            />
+          )}
+          {bytesTotal > bytesDone && bytesDone > 0 && (
+            <DetailRow label="Remaining" value={formatBytes(bytesTotal - bytesDone)} />
+          )}
+          {item.type && (
+            <DetailRow label="Engine" value={item.type === 'media' ? 'yt-dlp' : 'HTTP segments'} />
+          )}
+          {item.connections ? <DetailRow label="Connections" value={`${item.connections}×`} /> : null}
+          {canResume && (
+            <DetailRow label="Resume" value="Saved progress on server — use Resume" />
+          )}
+        </div>
+      )}
+
+      {item.status === 'queued' && (
+        <div className="download-details">
+          <DetailRow label="Added" value={formatDate(item.created_at)} />
+          {bytesTotal > 0 && <DetailRow label="File size" value={formatBytes(bytesTotal)} />}
+          {bytesDone > 0 && <DetailRow label="Resuming from" value={formatBytes(bytesDone)} />}
+          {item.connections ? <DetailRow label="Connections" value={`${item.connections}×`} /> : null}
         </div>
       )}
 
@@ -127,8 +215,8 @@ export default function DownloadCard({
               Pause
             </button>
           )}
-          {item.status === 'paused' && (
-            <button type="button" className="btn-secondary" onClick={() => onResume(item.id)}>
+          {(item.status === 'paused' || canResume) && (
+            <button type="button" className="btn-primary" onClick={() => onResume(item.id)}>
               Resume
             </button>
           )}
@@ -147,9 +235,18 @@ export default function DownloadCard({
               Sign in &amp; retry
             </button>
           )}
-          {!needsAuth && ['failed', 'cancelled'].includes(item.status) && (
+          {!needsAuth && ['failed', 'cancelled'].includes(item.status) && !canResume && (
             <button type="button" className="btn-secondary" onClick={() => onRetry(item.id)}>
               Retry
+            </button>
+          )}
+          {!needsAuth && ['failed', 'cancelled'].includes(item.status) && canResume && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onRetry?.(item.id, { fresh: true })}
+            >
+              Restart from scratch
             </button>
           )}
           {['completed', 'failed', 'cancelled'].includes(item.status) && (

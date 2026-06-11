@@ -3,7 +3,6 @@ import { HiBolt } from 'react-icons/hi2';
 import { useAuth } from '../context/AuthContext.jsx';
 import { toastError } from '../utils/swal.js';
 import PlatformIcon from '../components/PlatformIcon.jsx';
-import ThemeToggle from '../components/ThemeToggle.jsx';
 import { FEATURED_PLATFORMS } from '../utils/platformIcons.js';
 import './Login.css';
 
@@ -27,7 +26,13 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <ThemeToggle className="login-theme-toggle" />
+      <div className="dell-top-banner login-dell-banner" role="banner">
+        <div className="dell-top-banner-copy">
+          <strong>REMOTE DOWNLOAD MANAGER</strong>
+          <span>Sign in to queue downloads on your home server.</span>
+        </div>
+        <span className="dell-buy-sticker">RDM 1996</span>
+      </div>
       <div className="login-card">
         <div className="login-brand">
           <div className="login-logo">

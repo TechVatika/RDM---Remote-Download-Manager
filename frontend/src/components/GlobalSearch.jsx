@@ -58,12 +58,14 @@ export default function GlobalSearch({ downloads, onSelect, onNavigate }) {
       <HiMagnifyingGlass size={18} className="global-search-icon" />
       <input
         type="search"
-        placeholder="Search downloads… (Ctrl+K)"
+        className="global-search-input"
+        placeholder="Search downloads…"
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         aria-label="Search downloads"
       />
+      {!query && <kbd className="global-search-kbd" aria-hidden>Ctrl K</kbd>}
       {query && (
         <button type="button" className="global-search-clear" onClick={() => setQuery('')} aria-label="Clear">
           <HiXMark size={16} />

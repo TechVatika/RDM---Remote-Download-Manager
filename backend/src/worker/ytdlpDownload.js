@@ -9,6 +9,9 @@ import { isAdultSiteUrl } from '../data/adultSites.js';
 import {
   prepareDownloadUrl,
   friendlyMediaError,
+  looksLikePlaylistUrl,
+  extractYoutubeListId,
+  classifyYoutubePlaylistKind,
 } from '../utils/mediaUrl.js';
 import { logger } from '../utils/logger.js';
 
@@ -113,6 +116,29 @@ function commonArgs() {
   ];
 }
 
+/** Lighter args for format probing — faster metadata fetch. */
+function probeArgs({ allowPlaylist = false } = {}) {
+  return [
+    '--no-warnings',
+    ...(allowPlaylist ? [] : ['--no-playlist']),
+    '--geo-bypass',
+    '--retries',
+    '2',
+    '--fragment-retries',
+    '2',
+    '--socket-timeout',
+    '20',
+    '--user-agent',
+    USER_AGENT,
+    ...authArgs(),
+  ];
+}
+
+async function ytDlpProbeArgsForUrl(url, extra = [], { allowPlaylist = false } = {}) {
+  const proxyArgs = isAdultSiteUrl(url) ? await resolveProxyArgsForUrl(url) : [];
+  return [...probeArgs({ allowPlaylist }), ...siteExtraArgs(url), ...proxyArgs, ...extra];
+}
+
 /**
  * Browser impersonation (TLS/JA3 fingerprint) via curl_cffi. Many sites now
  * reject datacenter requests by fingerprint, not IP — impersonating a real
@@ -173,6 +199,85 @@ function runJson(args) {
 }
 
 /**
+ * List playlist entries via yt-dlp flat JSON (no per-video format probe).
+ * Returns null when the URL is not a multi-entry playlist.
+ */
+export async function listPlaylistEntries(url) {
+  const normalized = prepareDownloadUrl(url);
+  if (!looksLikePlaylistUrl(normalized)) return null;
+
+  await beginAdultWarpForUrl(normalized);
+  try {
+    const probeOnce = async (target) =>
+      runJson([
+        '-J',
+        '--flat-playlist',
+        ...(await ytDlpProbeArgsForUrl(normalized, impersonateArgs(target), { allowPlaylist: true })),
+        normalized,
+      ]);
+
+    let raw;
+    try {
+      raw = await probeOnce(null);
+    } catch (err) {
+      const target = await impersonateTarget();
+      if (target && isBlockLikeError(err.message)) {
+        log.info(`playlist probe blocked, retrying with impersonation: ${new URL(normalized).hostname}`);
+        raw = await probeOnce(target);
+      } else {
+        throw err;
+      }
+    }
+
+    const info = JSON.parse(raw);
+    if (info._type !== 'playlist' || !Array.isArray(info.entries)) return null;
+
+    const isYoutube = (() => {
+      try {
+        const host = new URL(normalized).hostname.toLowerCase();
+        return host.includes('youtube.com') || host.includes('music.youtube.com');
+      } catch {
+        return false;
+      }
+    })();
+
+    const entries = info.entries
+      .filter(Boolean)
+      .map((e) => ({
+        id: e.id,
+        title: e.title || e.id,
+        url:
+          e.url ||
+          e.webpage_url ||
+          e.original_url ||
+          (isYoutube && e.id ? `https://www.youtube.com/watch?v=${e.id}` : null),
+      }))
+      .filter((e) => e.url);
+
+    if (entries.length <= 1) return null;
+
+    const listId = extractYoutubeListId(normalized) || info.id;
+    const classification = classifyYoutubePlaylistKind(listId);
+
+    return {
+      playlistId: info.id || listId,
+      playlistTitle: info.title || classification?.label || 'Playlist',
+      entryCount: entries.length,
+      entries,
+      kind: classification?.kind || 'playlist',
+      kindLabel: classification?.label || 'Playlist',
+      requiresAuth: classification?.requiresAuth || false,
+    };
+  } catch (err) {
+    if (/blob:|Invalid URL|URL is required/i.test(err.message || '')) throw err;
+    log.warn(`playlist listing failed for ${normalized}: ${err.message}`);
+    return null;
+  } finally {
+    await releaseAdultWarpForUrl(normalized);
+  }
+}
+
+/**
  * Probe a URL: returns title, thumbnail and the list of selectable formats.
  */
 export async function probeMedia(url) {
@@ -180,7 +285,7 @@ export async function probeMedia(url) {
   await beginAdultWarpForUrl(normalized);
   try {
     const probeOnce = async (target) =>
-      runJson(['-J', ...(await ytDlpArgsForUrl(normalized, impersonateArgs(target))), normalized]);
+      runJson(['-J', ...(await ytDlpProbeArgsForUrl(normalized, impersonateArgs(target))), normalized]);
 
     let raw;
     try {
@@ -222,6 +327,11 @@ export async function probeMedia(url) {
 
     const audioAvailable = formats.some((f) => f.acodec && f.acodec !== 'none');
 
+    let playlist = null;
+    if (looksLikePlaylistUrl(normalized)) {
+      playlist = await listPlaylistEntries(normalized);
+    }
+
     return {
       title: meta.title || 'media',
       thumbnail: meta.thumbnail || null,
@@ -231,6 +341,7 @@ export async function probeMedia(url) {
       normalizedUrl: normalized,
       videoQualities,
       audioAvailable,
+      playlist,
     };
   } catch (err) {
     if (/blob:|Invalid URL|URL is required/i.test(err.message || '')) throw err;

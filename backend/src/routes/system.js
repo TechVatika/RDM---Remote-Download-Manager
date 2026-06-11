@@ -5,7 +5,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 
 import { pingDatabase, pool } from '../db/pool.js';
-import { destinationProfiles } from '../config/paths.js';
+import { tempBase, finalBase } from '../config/paths.js';
 import { getAiRenameConfig } from '../utils/aiRename.js';
 import { getAuthStatus } from '../config/cookies.js';
 import { getSpeedConfig } from '../config/speed.js';
@@ -112,10 +112,10 @@ router.get('/', async (_req, res) => {
     database = 'disconnected';
   }
 
-  const storage = {};
-  for (const [id, dir] of Object.entries(destinationProfiles)) {
-    storage[id] = { path: dir, ...(await folderStats(dir)) };
-  }
+  const storage = {
+    staging: { path: tempBase, ...(await folderStats(tempBase)) },
+    final: { path: finalBase, ...(await folderStats(finalBase)) },
+  };
 
   const authStatus = getAuthStatus();
   const workerHeartbeat = await readWorkerHeartbeat();

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../api/client.js';
 import { formatBytes } from '../utils/format.js';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
+import AsyncPanel from '../components/AsyncPanel.jsx';
 
 function formatUptime(seconds) {
   if (!seconds) return '—';
@@ -13,12 +15,18 @@ function formatUptime(seconds) {
 export default function SystemHealthView() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await apiFetch('/api/system');
-      if (res.ok) setData(await res.json());
+      if (!res.ok) throw new Error('Could not load system health');
+      setData(await res.json());
+    } catch (err) {
+      setData(null);
+      setError(err.message || 'Could not load system health');
     } finally {
       setLoading(false);
     }
@@ -31,10 +39,12 @@ export default function SystemHealthView() {
   }, [load]);
 
   if (loading && !data) {
+    return <AsyncPanel title="SYSTEM HEALTH" tint="steel" loading />;
+  }
+
+  if (error && !data) {
     return (
-      <section className="panel">
-        <p className="settings-desc">Loading system health…</p>
-      </section>
+      <AsyncPanel title="SYSTEM HEALTH" tint="steel" loading={false} error={error} onRetry={load} />
     );
   }
 
@@ -45,12 +55,16 @@ export default function SystemHealthView() {
   return (
     <>
       <section className="panel">
-        <div className="panel-head">
-          <h2>System status</h2>
-          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
-            Refresh
-          </button>
-        </div>
+        <SectionEyebrow
+          title="SYSTEM STATUS"
+          tint="steel"
+          action={(
+            <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+              Refresh
+            </button>
+          )}
+        />
+        <div className="panel-body">
         <div className="cookie-status-card">
           <div className="cookie-status-row">
             <span>Overall</span>
@@ -78,14 +92,19 @@ export default function SystemHealthView() {
           </div>
           <div className="cookie-status-row">
             <span>Memory used</span>
-            <strong>{memUsed.toFixed(0)}% ({formatBytes(data?.memory?.total - data?.memory?.free)} / {formatBytes(data?.memory?.total)})</strong>
+            <strong>
+              {memUsed.toFixed(0)}% ({formatBytes(data?.memory?.total - data?.memory?.free)} /{' '}
+              {formatBytes(data?.memory?.total)})
+            </strong>
           </div>
+        </div>
         </div>
       </section>
 
       <div className="analytics-grid">
         <section className="panel">
-          <h2>Download worker</h2>
+          <SectionEyebrow title="DOWNLOAD WORKER" tint="sky" />
+          <div className="panel-body">
           <ul className="analytics-list">
             <li><span className="analytics-label">Max concurrent</span><span>{data?.worker?.maxConcurrent}</span></li>
             <li><span className="analytics-label">Poll interval</span><span>{data?.worker?.pollMs}ms</span></li>
@@ -93,10 +112,12 @@ export default function SystemHealthView() {
             <li><span className="analytics-label">Downloading</span><span>{data?.worker?.queue?.downloading ?? 0}</span></li>
             <li><span className="analytics-label">Paused</span><span>{data?.worker?.queue?.paused ?? 0}</span></li>
           </ul>
+          </div>
         </section>
 
         <section className="panel">
-          <h2>Engines</h2>
+          <SectionEyebrow title="ENGINES" tint="olive" />
+          <div className="panel-body">
           <ul className="analytics-list">
             <li>
               <span className="analytics-label">yt-dlp</span>
@@ -117,11 +138,13 @@ export default function SystemHealthView() {
               <span>{data?.platformAuth?.configured ? data.platformAuth.method : 'None'}</span>
             </li>
           </ul>
+          </div>
         </section>
       </div>
 
       <section className="panel">
-        <h2>Storage</h2>
+        <SectionEyebrow title="STORAGE" tint="periwinkle" />
+        <div className="panel-body">
         <div className="folder-stats-grid">
           {Object.entries(data?.storage || {}).map(([id, folder]) => (
             <div key={id} className="folder-stat-card">
@@ -131,6 +154,7 @@ export default function SystemHealthView() {
               <code className="folder-path">{folder.path}</code>
             </div>
           ))}
+        </div>
         </div>
       </section>
     </>

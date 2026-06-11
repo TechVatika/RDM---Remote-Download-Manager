@@ -17,18 +17,20 @@ import {
   testAdultWarpConnection,
 } from '../config/adultProxy.js';
 import { COOKIES_GUIDE } from '../data/platforms.js';
+import { getStagingCleanupStatus } from '../utils/stagingCleanup.js';
 
 const router = Router();
 
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   const aiRename = getAiRenameConfig();
   res.json({
     publicMediaOnly: process.env.PUBLIC_MEDIA_ONLY !== 'false',
     aiRename,
     downloadPaths: {
-      base: process.env.DOWNLOAD_BASE_PATH || '/mnt/4tb-1/RDM/downloads',
-      folders: ['general', 'movies', 'software'],
+      staging: process.env.DOWNLOAD_TEMP_PATH || process.env.DOWNLOAD_BASE_PATH || '/mnt/4tb-1/RDM/downloads',
+      final: process.env.DOWNLOAD_FINAL_PATH || '/mnt/4tb/ENTERTAINMENT/RDM DOWNLOADS',
     },
+    stagingCleanup: await getStagingCleanupStatus(),
     connections: getSpeedConfig(),
     speed: getSpeedConfig(),
     howItWorks: {

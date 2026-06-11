@@ -1,0 +1,48 @@
+/**
+ * Loaded after Dashboard.css — kills leftover sidebar spacing from the default theme.
+ */
+[data-design='dell-1996'] .sidebar {
+  padding: 0 !important;
+  margin: 0;
+  gap: 0;
+}
+
+[data-design='dell-1996'] .sidebar-header {
+  padding: 10px 12px !important;
+  margin: 0 !important;
+}
+
+[data-design='dell-1996'] .sidebar-brand,
+[data-design='dell-1996'] .sidebar-header .sidebar-brand {
+  padding: 0 !important;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .sidebar-nav {
+  padding: 0;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .nav-group:first-child .nav-group-label {
+  margin-top: 0 !important;
+  padding-top: 6px;
+}
+
+@media (min-width: 769px) {
+  [data-design='dell-1996'] .sidebar {
+    top: var(--dell-frame-inset) !important;
+    left: var(--dell-frame-inset) !important;
+    height: calc(100vh - (var(--dell-frame-inset) * 2)) !important;
+    padding: 0 !important;
+  }
+
+  [data-design='dell-1996'] .sidebar-header {
+    padding-bottom: 10px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  [data-design='dell-1996'] .sidebar-header {
+    padding-top: 10px !important;
+  }
+}

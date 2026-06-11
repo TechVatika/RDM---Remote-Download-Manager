@@ -6,6 +6,8 @@ import {
   HiLockClosed,
 } from 'react-icons/hi2';
 import { apiFetch } from '../api/client.js';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
+import AsyncPanel from '../components/AsyncPanel.jsx';
 
 function Protection({ ok, children }) {
   const Icon = ok ? HiCheckCircle : HiExclamationTriangle;
@@ -20,12 +22,18 @@ function Protection({ ok, children }) {
 export default function SecurityView() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await apiFetch('/api/system/security');
-      if (res.ok) setData(await res.json());
+      if (!res.ok) throw new Error('Could not load security status');
+      setData(await res.json());
+    } catch (err) {
+      setData(null);
+      setError(err.message || 'Could not load security status');
     } finally {
       setLoading(false);
     }
@@ -36,11 +44,11 @@ export default function SecurityView() {
   }, [load]);
 
   if (loading && !data) {
-    return (
-      <section className="panel">
-        <p className="settings-desc">Loading security status…</p>
-      </section>
-    );
+    return <AsyncPanel title="SECURITY" tint="olive" loading />;
+  }
+
+  if (error && !data) {
+    return <AsyncPanel title="SECURITY" tint="olive" error={error} onRetry={load} />;
   }
 
   const protections = [
@@ -83,12 +91,12 @@ export default function SecurityView() {
 
   return (
     <>
-      <section className="panel security-hero">
+      <section className="security-hero">
         <div className="security-hero-icon">
           <HiShieldCheck size={30} />
         </div>
         <div className="security-hero-text">
-          <h2>Your server is hardened</h2>
+          <h2>YOUR SERVER IS HARDENED</h2>
           <p className="settings-desc">
             {activeCount} of {protections.length} core protections active ·{' '}
             {data?.https ? 'served over HTTPS' : 'served over HTTP'}
@@ -100,12 +108,16 @@ export default function SecurityView() {
       </section>
 
       <section className="panel">
-        <div className="panel-head">
-          <h2>Active protections</h2>
-          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
-            Refresh
-          </button>
-        </div>
+        <SectionEyebrow
+          title="ACTIVE PROTECTIONS"
+          tint="lime"
+          action={(
+            <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+              Refresh
+            </button>
+          )}
+        />
+        <div className="panel-body">
         <ul className="security-list">
           {protections.map((p) => (
             <Protection key={p.label} ok={p.ok}>
@@ -113,11 +125,13 @@ export default function SecurityView() {
             </Protection>
           ))}
         </ul>
+        </div>
       </section>
 
       <div className="analytics-grid">
         <section className="panel">
-          <h2>Download firewall (SSRF)</h2>
+          <SectionEyebrow title="DOWNLOAD FIREWALL (SSRF)" tint="sky" />
+          <div className="panel-body">
           <ul className="analytics-list">
             {(data?.ssrfProtection?.blocks || []).map((b) => (
               <li key={b}>
@@ -132,10 +146,12 @@ export default function SecurityView() {
               </span>
             </li>
           </ul>
+          </div>
         </section>
 
         <section className="panel">
-          <h2>Access control</h2>
+          <SectionEyebrow title="ACCESS CONTROL" tint="peach" />
+          <div className="panel-body">
           <ul className="analytics-list">
             <li>
               <span className="analytics-label">Authentication</span>
@@ -168,12 +184,14 @@ export default function SecurityView() {
               </span>
             </li>
           </ul>
+          </div>
         </section>
       </div>
 
       {recommendations.length > 0 && (
-        <section className="panel">
-          <h2>Recommended hardening</h2>
+        <section className="panel panel-alert">
+          <SectionEyebrow title="RECOMMENDED HARDENING" tint="salmon" />
+          <div className="panel-body">
           <ul className="security-tips">
             {recommendations.map((r) => (
               <li key={r}>
@@ -182,6 +200,7 @@ export default function SecurityView() {
               </li>
             ))}
           </ul>
+          </div>
         </section>
       )}
     </>

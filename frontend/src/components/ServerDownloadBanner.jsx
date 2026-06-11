@@ -17,7 +17,8 @@ export default function ServerDownloadBanner({ compact = false }) {
         <strong>Remote downloads</strong>
         <p>
           Once queued, downloads run on your home server — not in this browser tab.
-          You can close this page, lock your laptop, or switch devices; the download keeps going.
+          You can log out, close this page, shut down your PC, or switch devices; the download keeps going.
+          Large files auto-resume if the CDN drops the connection — partial progress is saved on disk.
         </p>
       </div>
     </div>

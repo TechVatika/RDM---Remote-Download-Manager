@@ -1,0 +1,4169 @@
+/**
+ * Dell 1996 catalog-era design — from DESIGN.md (getdesign.md dell-1996).
+ * Black page frame, flat ribbon cards, Arial Black display, Times body, zero radius.
+ */
+
+[data-design='dell-1996'] {
+  --dell-red: #e91d2a;
+  --dell-yellow: #fcc20f;
+  --dell-purple: #6a26a4;
+  --dell-link: #0000ee;
+  --dell-frame: #000000;
+  --dell-canvas: #ffffff;
+  --dell-ink: #000000;
+
+  --tint-olive: #8e8a25;
+  --tint-sage: #b3bd95;
+  --tint-salmon: #d77a7a;
+  --tint-peach: #e6915d;
+  --tint-lime: #c0d4a7;
+  --tint-sky: #9ab6c8;
+  --tint-steel: #a5b8c0;
+  --tint-periwinkle: #8c9ae0;
+
+  --bg: var(--dell-canvas);
+  --bg-soft: var(--dell-canvas);
+  --surface: var(--dell-canvas);
+  --surface-solid: var(--dell-canvas);
+  --surface-2: var(--tint-sage);
+  --border: var(--dell-frame);
+  --border-strong: var(--dell-frame);
+  --text: var(--dell-ink);
+  --text-muted: var(--dell-ink);
+  --primary: var(--dell-frame);
+  --primary-hover: #222222;
+  --primary-soft: var(--tint-sky);
+  --accent: var(--dell-red);
+  --accent-soft: var(--dell-yellow);
+  --success: var(--tint-olive);
+  --success-soft: var(--tint-lime);
+  --warning: var(--dell-yellow);
+  --warning-soft: var(--tint-peach);
+  --danger: var(--dell-red);
+  --danger-soft: var(--tint-salmon);
+  --glass: var(--dell-canvas);
+  --glass-border: var(--dell-frame);
+  --shadow: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+  --radius: 0;
+  --radius-lg: 0;
+  --font-display: 'Arial Black', Arial, Helvetica, sans-serif;
+  --font-body: 'Times New Roman', Times, serif;
+  --font-mono: 'Courier New', Courier, monospace;
+  --track: #cccccc;
+  --fill-subtle: var(--tint-lime);
+  --border-accent: var(--dell-frame);
+  --border-danger: var(--dell-red);
+  --border-warning: var(--dell-yellow);
+  --inset-hi: var(--dell-canvas);
+  --sidebar-width: 220px;
+  --dell-frame-inset: 8px;
+  --transition: 0.1s linear;
+  --transition-fast: 0.1s linear;
+
+  color-scheme: light;
+}
+
+/* Catalog era is light-only — dark tokens mirror the same palette */
+[data-design='dell-1996'][data-theme='dark'] {
+  color-scheme: light;
+}
+
+[data-design='dell-1996'] body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+  background: var(--dell-frame);
+  -webkit-font-smoothing: auto;
+}
+
+[data-design='dell-1996'] h1,
+[data-design='dell-1996'] h2,
+[data-design='dell-1996'] h3,
+[data-design='dell-1996'] .stat-card strong,
+[data-design='dell-1996'] .brand-logo,
+[data-design='dell-1996'] .login-brand h1,
+[data-design='dell-1996'] .welcome-banner h2,
+[data-design='dell-1996'] .panel h2,
+[data-design='dell-1996'] .topbar-titles h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .theme-toggle,
+[data-design='dell-1996'] .bg-decor,
+[data-design='dell-1996'] .loading-ring {
+  display: none !important;
+}
+
+/* ── Page frame ── */
+[data-design='dell-1996'] .dell-page-frame {
+  min-height: 100vh;
+  padding: var(--dell-frame-inset);
+  background: var(--dell-frame);
+  box-sizing: border-box;
+}
+
+[data-design='dell-1996'] .dell-canvas {
+  min-height: calc(100vh - (var(--dell-frame-inset) * 2));
+  background: var(--dell-canvas);
+  border: 1px solid var(--dell-frame);
+}
+
+/* ── Top banner (catalog header) ── */
+[data-design='dell-1996'] .dell-top-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px 20px;
+  background: var(--dell-frame);
+  color: var(--dell-canvas);
+  border-bottom: 1px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+[data-design='dell-1996'] .dell-top-banner-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .dell-top-banner strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+[data-design='dell-1996'] .dell-top-banner span {
+  font-size: 12px;
+  font-family: var(--font-body);
+  opacity: 0.92;
+}
+
+[data-design='dell-1996'] .dell-buy-sticker {
+  background: var(--dell-yellow);
+  color: var(--dell-ink);
+  border: 1px solid var(--dell-frame);
+  padding: 4px 10px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .dell-phone-callout {
+  color: var(--dell-red);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ── Shell ── */
+[data-design='dell-1996'] .dashboard {
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .sidebar {
+  background: var(--dell-canvas);
+  border-right: 1px solid var(--dell-frame);
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0 !important;
+  margin: 0;
+  gap: 0;
+  align-items: stretch;
+}
+
+[data-design='dell-1996'] .sidebar-header {
+  background: var(--dell-frame);
+  color: var(--dell-canvas);
+  padding: 10px 12px !important;
+  margin: 0 !important;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-design='dell-1996'] .sidebar-brand {
+  padding: 0 !important;
+  margin: 0;
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .sidebar-header .sidebar-brand {
+  padding: 0 !important;
+}
+
+[data-design='dell-1996'] .sidebar-nav {
+  padding: 0;
+  margin: 0;
+  gap: 0;
+}
+
+[data-design='dell-1996'] .nav-group:first-child .nav-group-label {
+  margin-top: 0 !important;
+  padding-top: 6px;
+}
+
+[data-design='dell-1996'] .sidebar-brand strong {
+  color: var(--dell-canvas);
+  font-size: 14px;
+}
+
+[data-design='dell-1996'] .sidebar-brand span {
+  color: var(--dell-canvas);
+  opacity: 0.85;
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+
+[data-design='dell-1996'] .brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: var(--dell-red);
+  border: 1px solid var(--dell-canvas);
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .brand-logo:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .nav-group-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dell-ink);
+  background: var(--tint-olive);
+  padding: 6px 10px;
+  margin: 8px 0 0;
+  letter-spacing: 0.04em;
+}
+
+[data-design='dell-1996'] .nav-item {
+  border-radius: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--dell-ink);
+  border-bottom: 1px solid var(--dell-frame);
+  padding: 10px 12px;
+}
+
+[data-design='dell-1996'] .nav-item::before {
+  display: none;
+}
+
+[data-design='dell-1996'] .nav-item.active {
+  background: var(--tint-sky);
+  color: var(--dell-ink);
+  border-left: 4px solid var(--dell-red);
+}
+
+[data-design='dell-1996'] .nav-item:hover {
+  background: var(--tint-lime);
+  transform: none;
+}
+
+[data-design='dell-1996'] .topbar {
+  background: var(--dell-canvas);
+  border-bottom: 1px solid var(--dell-frame);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+[data-design='dell-1996'] .topbar-titles h1 {
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+[data-design='dell-1996'] .topbar-subtitle {
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .live-badge {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-yellow);
+  color: var(--dell-ink);
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .live-dot {
+  background: var(--dell-red);
+}
+
+/* ── Panels & ribbon cards ── */
+[data-design='dell-1996'] .panel {
+  background: var(--dell-canvas);
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+[data-design='dell-1996'] .panel:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+[data-design='dell-1996'] .panel-head {
+  background: var(--dell-canvas);
+  border-bottom: 1px solid var(--dell-frame);
+  padding: 6px 12px;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .panel-head h2,
+[data-design='dell-1996'] .panel > h2 {
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Panel content: one flex stack, one gap — no margin fighting ── */
+[data-design='dell-1996'] .panel-body,
+[data-design='dell-1996'] .panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  margin: 0;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+
+[data-design='dell-1996'] .panel-body > * {
+  max-width: 100%;
+}
+
+[data-design='dell-1996'] .panel .dell-section-eyebrow {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .panel > .panel-head {
+  margin: 0;
+}
+
+/* Kill Dashboard.css rem margins that load after this file */
+[data-design='dell-1996'] .settings-desc,
+[data-design='dell-1996'] .auth-methods,
+[data-design='dell-1996'] .auth-form-block,
+[data-design='dell-1996'] .cookie-status-card,
+[data-design='dell-1996'] .platform-note,
+[data-design='dell-1996'] .platform-settings-banner,
+[data-design='dell-1996'] .settings-actions,
+[data-design='dell-1996'] .settings-ok,
+[data-design='dell-1996'] .block-help,
+[data-design='dell-1996'] .cookie-tips,
+[data-design='dell-1996'] .form-error,
+[data-design='dell-1996'] .mode-tabs,
+[data-design='dell-1996'] .drop-zone,
+[data-design='dell-1996'] .download-form,
+[data-design='dell-1996'] .files-toolbar,
+[data-design='dell-1996'] .folder-stats-grid {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Fallback inset for panels not yet wrapped in .panel-body */
+[data-design='dell-1996'] .panel > :not(.dell-section-eyebrow):not(.panel-head):not(.panel-body):not(.panel-inner):not(.history-summary):not(.history-filters):not(.history-toolbar):not(.activity-summary) {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+[data-design='dell-1996'] .panel > .dell-section-eyebrow ~ :not(.panel-body):not(.panel-inner):not(.history-summary):not(.history-filters):not(.history-toolbar):not(.activity-summary):first-of-type,
+[data-design='dell-1996'] .panel > .panel-head ~ :not(.panel-body):not(.panel-inner):first-of-type {
+  margin-top: 16px;
+}
+
+[data-design='dell-1996'] .panel > :not(.dell-section-eyebrow):not(.panel-head):not(.panel-body):not(.panel-inner):last-child {
+  margin-bottom: 16px;
+}
+
+[data-design='dell-1996'] .settings-panel > h2 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin: 16px;
+  padding: 0;
+}
+
+[data-design='dell-1996'] .stat-card {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .stat-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .stat-card-clickable {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  transition: background 0.1s linear;
+}
+
+[data-design='dell-1996'] .stat-card-clickable:hover {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .stat-card-clickable:active {
+  background: var(--tint-sky);
+}
+
+[data-design='dell-1996'] .stat-card-clickable:focus-visible {
+  outline: 2px solid var(--dell-red);
+  outline-offset: 2px;
+}
+
+[data-design='dell-1996'] .stat-card-hint {
+  display: block;
+  margin-top: 8px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--dell-ink);
+  opacity: 0.75;
+}
+
+[data-design='dell-1996'] .stat-card-clickable:hover .stat-card-hint {
+  opacity: 1;
+  color: var(--dell-red);
+}
+
+[data-design='dell-1996'] .stat-card.accent-blue { border-top: 4px solid var(--tint-sky); }
+[data-design='dell-1996'] .stat-card.accent-green { border-top: 4px solid var(--tint-lime); }
+[data-design='dell-1996'] .stat-card.accent-red { border-top: 4px solid var(--dell-red); }
+[data-design='dell-1996'] .stat-card.accent-purple { border-top: 4px solid var(--tint-periwinkle); }
+
+[data-design='dell-1996'] .stat-icon {
+  border-radius: 0 !important;
+  border: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .welcome-banner {
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .welcome-banner h2,
+[data-design='dell-1996'] .welcome-banner p {
+  color: var(--dell-canvas);
+  font-family: var(--font-body);
+  text-transform: none;
+}
+
+[data-design='dell-1996'] .server-download-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sky);
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+}
+
+[data-design='dell-1996'] .server-download-note--compact {
+  font-family: var(--font-body);
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-lime);
+  padding: 6px 10px;
+}
+
+/* ── Download items (ribbon cards) ── */
+[data-design='dell-1996'] .download-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+[data-design='dell-1996'] .download-item {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+[data-design='dell-1996'] .download-item:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .download-item-top {
+  background: var(--dell-canvas);
+  border-bottom: 1px solid var(--dell-frame);
+  padding: 6px 12px;
+}
+
+[data-design='dell-1996'] .download-filename {
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+[data-design='dell-1996'] .download-item .download-stats,
+[data-design='dell-1996'] .download-item .download-details,
+[data-design='dell-1996'] .download-item .item-actions,
+[data-design='dell-1996'] .download-item .path-row,
+[data-design='dell-1996'] .download-item .progress-bar {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+[data-design='dell-1996'] .download-item .download-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+  background: var(--tint-sage);
+  border-top: 1px solid var(--dell-frame);
+  border-radius: 0;
+  padding: 10px 12px;
+}
+
+[data-design='dell-1996'] .download-item .detail-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .download-item .detail-value {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  word-break: break-word;
+}
+
+[data-design='dell-1996'] .download-list .download-item:nth-child(6n + 1) .download-details { background: var(--tint-sage); }
+[data-design='dell-1996'] .download-list .download-item:nth-child(6n + 2) .download-details { background: var(--tint-salmon); }
+[data-design='dell-1996'] .download-list .download-item:nth-child(6n + 3) .download-details { background: var(--tint-sky); }
+[data-design='dell-1996'] .download-list .download-item:nth-child(6n + 4) .download-details { background: var(--tint-periwinkle); }
+[data-design='dell-1996'] .download-list .download-item:nth-child(6n + 5) .download-details { background: var(--tint-lime); }
+[data-design='dell-1996'] .download-list .download-item:nth-child(6n + 6) .download-details { background: var(--tint-peach); }
+
+[data-design='dell-1996'] .progress-bar {
+  height: 12px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .progress-fill {
+  border-radius: 0;
+  background: var(--dell-red);
+}
+
+[data-design='dell-1996'] .status {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .type-tag,
+[data-design='dell-1996'] .kind-tag,
+[data-design='dell-1996'] .cat-tag {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-yellow);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ── Buttons & inputs ── */
+[data-design='dell-1996'] .btn-primary {
+  background: var(--dell-frame);
+  color: var(--dell-canvas);
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .btn-primary:hover:not(:disabled) {
+  background: var(--dell-red);
+  transform: none;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .btn-secondary,
+[data-design='dell-1996'] .btn-danger {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .btn-secondary {
+  background: var(--dell-canvas);
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .btn-secondary:hover {
+  background: var(--tint-sky);
+  transform: none;
+}
+
+[data-design='dell-1996'] .btn-danger {
+  background: var(--tint-salmon);
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .btn-link,
+[data-design='dell-1996'] .btn-copy-url {
+  color: var(--dell-link);
+  font-family: var(--font-body);
+  font-weight: 400;
+  text-decoration: underline;
+}
+
+[data-design='dell-1996'] .download-form input,
+[data-design='dell-1996'] .download-form select,
+[data-design='dell-1996'] .download-form textarea,
+[data-design='dell-1996'] .history-search,
+[data-design='dell-1996'] .global-search-input {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  font-family: var(--font-body);
+  font-size: 14px;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .download-form input:focus,
+[data-design='dell-1996'] .download-form select:focus,
+[data-design='dell-1996'] .download-form textarea:focus {
+  outline: 2px solid var(--dell-frame);
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .download-form label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .mode-tab,
+[data-design='dell-1996'] .category-tab {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .mode-tab.active,
+[data-design='dell-1996'] .category-tab.active {
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+  border-color: var(--dell-frame);
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .drop-zone {
+  border: 2px dashed var(--dell-frame);
+  border-radius: 0;
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .ai-toggle {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-peach);
+  font-family: var(--font-body);
+}
+
+/* ── Login ── */
+[data-design='dell-1996'] .login-page {
+  background: var(--dell-canvas);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: calc(100vh - (var(--dell-frame-inset) * 2));
+}
+
+[data-design='dell-1996'] .login-dell-banner {
+  flex-shrink: 0;
+}
+
+[data-design='dell-1996'] .login-card {
+  margin: auto;
+}
+
+[data-design='dell-1996'] .login-page::before,
+[data-design='dell-1996'] .login-page::after {
+  display: none;
+}
+
+[data-design='dell-1996'] .login-card {
+  max-width: 480px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: none;
+}
+
+[data-design='dell-1996'] .login-logo {
+  border-radius: 0;
+  background: var(--dell-red);
+  border: 1px solid var(--dell-frame);
+  box-shadow: none;
+  animation: none;
+}
+
+[data-design='dell-1996'] .login-brand h1 {
+  font-size: 24px;
+}
+
+[data-design='dell-1996'] .login-brand p {
+  font-family: var(--font-body);
+}
+
+[data-design='dell-1996'] .login-form input {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  font-family: var(--font-body);
+}
+
+[data-design='dell-1996'] .login-form label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .loading-screen {
+  background: var(--dell-frame);
+}
+
+[data-design='dell-1996'] .loading-screen-inner p {
+  font-family: var(--font-body);
+  color: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .loading-logo-icon {
+  background: var(--dell-red);
+  border: 1px solid var(--dell-canvas);
+  border-radius: 0;
+}
+
+[data-design='dell-1996'] .download-info {
+  color: var(--dell-ink);
+  font-family: var(--font-body);
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sky);
+  padding: 8px 10px;
+}
+
+[data-design='dell-1996'] .download-error {
+  font-family: var(--font-body);
+}
+
+[data-design='dell-1996'] .mobile-bottom-nav {
+  border-top: 1px solid var(--dell-frame);
+  background: var(--dell-canvas);
+  border-radius: 0;
+}
+
+[data-design='dell-1996'] .detail-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .detail-value {
+  font-family: var(--font-body);
+}
+
+/* ── Layout ── */
+[data-design='dell-1996'] .dashboard-content {
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 16px 20px 24px;
+  /* One uniform gap between every top-level section, regardless of class.
+     This is the single source of truth for section spacing. */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Top-level sections never set their own outer margin — the flex gap owns it. */
+[data-design='dell-1996'] .dashboard-content > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+[data-design='dell-1996'] .dashboard-main {
+  background: var(--dell-canvas);
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop: fixed sidebar must sit inside the black page frame, not viewport 0 */
+@media (min-width: 769px) {
+  [data-design='dell-1996'] .sidebar {
+    left: var(--dell-frame-inset) !important;
+    top: var(--dell-frame-inset) !important;
+    height: calc(100vh - (var(--dell-frame-inset) * 2)) !important;
+    width: var(--sidebar-width);
+    padding: 0 !important;
+  }
+
+  [data-design='dell-1996'] .dashboard {
+    min-height: calc(100vh - (var(--dell-frame-inset) * 2));
+  }
+
+  [data-design='dell-1996'] .sidebar {
+    flex: none;
+  }
+
+  [data-design='dell-1996'] .dashboard-main {
+    margin-left: var(--sidebar-width);
+    width: auto;
+    max-width: 100%;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ── Section eyebrows ── */
+[data-design='dell-1996'] .dell-section-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border-bottom: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .dell-section-eyebrow-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .dell-tint-olive { background: var(--tint-olive); }
+[data-design='dell-1996'] .dell-tint-salmon { background: var(--tint-salmon); }
+[data-design='dell-1996'] .dell-tint-sage { background: var(--tint-sage); }
+[data-design='dell-1996'] .dell-tint-sky { background: var(--tint-sky); }
+[data-design='dell-1996'] .dell-tint-periwinkle { background: var(--tint-periwinkle); }
+[data-design='dell-1996'] .dell-tint-lime { background: var(--tint-lime); }
+[data-design='dell-1996'] .dell-tint-peach { background: var(--tint-peach); }
+[data-design='dell-1996'] .dell-tint-steel { background: var(--tint-steel); }
+
+[data-design='dell-1996'] .panel-body .quick-links-grid,
+[data-design='dell-1996'] .panel-inner .quick-links-grid {
+  padding: 0;
+}
+
+[data-design='dell-1996'] .panel-body .download-list,
+[data-design='dell-1996'] .panel-inner .download-list {
+  margin: 0;
+  padding: 0;
+  gap: 10px;
+  width: 100%;
+}
+
+[data-design='dell-1996'] .panel-body .logs-filters,
+[data-design='dell-1996'] .panel-inner .logs-filters,
+[data-design='dell-1996'] .panel-body .logs-console,
+[data-design='dell-1996'] .panel-inner .logs-console {
+  margin: 0;
+  padding: 0;
+}
+
+[data-design='dell-1996'] .panel-body .history-filters,
+[data-design='dell-1996'] .panel-body .history-toolbar {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* ── Welcome banner + cert seal ── */
+[data-design='dell-1996'] .welcome-banner {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  position: relative;
+}
+
+[data-design='dell-1996'] .welcome-banner::before {
+  display: none;
+}
+
+[data-design='dell-1996'] .welcome-banner h2 {
+  font-size: 20px;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .welcome-cta {
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .dell-cert-seal {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+  border: 2px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ── NEW! sticker ── */
+[data-design='dell-1996'] .download-item {
+  position: relative;
+}
+
+[data-design='dell-1996'] .dell-new-sticker {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  background: var(--dell-yellow);
+  color: var(--dell-ink);
+  border: 1px solid var(--dell-frame);
+  padding: 3px 8px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  transform: rotate(12deg);
+}
+
+/* Category ribbon tints on download cards */
+[data-design='dell-1996'] .download-item.ribbon-tint-sage .download-details { background: var(--tint-sage); }
+[data-design='dell-1996'] .download-item.ribbon-tint-salmon .download-details { background: var(--tint-salmon); }
+[data-design='dell-1996'] .download-item.ribbon-tint-sky .download-details { background: var(--tint-sky); }
+[data-design='dell-1996'] .download-item.ribbon-tint-periwinkle .download-details { background: var(--tint-periwinkle); }
+[data-design='dell-1996'] .download-item.ribbon-tint-lime .download-details { background: var(--tint-lime); }
+[data-design='dell-1996'] .download-item.ribbon-tint-peach .download-details { background: var(--tint-peach); }
+[data-design='dell-1996'] .download-item.ribbon-tint-steel .download-details { background: var(--tint-steel); }
+[data-design='dell-1996'] .download-item.ribbon-tint-olive .download-details { background: var(--tint-olive); }
+
+/* ── Quick links ── */
+[data-design='dell-1996'] .quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  padding: 16px;
+}
+
+[data-design='dell-1996'] .quick-link-card {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  padding: 14px 12px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+[data-design='dell-1996'] .quick-link-card:hover {
+  background: var(--tint-lime);
+  transform: none;
+}
+
+[data-design='dell-1996'] .quick-link-card.accent-blue { border-top: 4px solid var(--tint-sky); }
+[data-design='dell-1996'] .quick-link-card.accent-green { border-top: 4px solid var(--tint-lime); }
+[data-design='dell-1996'] .quick-link-card.accent-red { border-top: 4px solid var(--dell-red); }
+[data-design='dell-1996'] .quick-link-card.accent-purple { border-top: 4px solid var(--tint-periwinkle); }
+[data-design='dell-1996'] .quick-link-card.accent-orange { border-top: 4px solid var(--tint-peach); }
+[data-design='dell-1996'] .quick-link-card.accent-slate { border-top: 4px solid var(--tint-steel); }
+
+[data-design='dell-1996'] .quick-link-icon {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  display: grid;
+  place-items: center;
+  background: var(--dell-yellow);
+}
+
+/* ── Overview dashboard ── */
+[data-design='dell-1996'] .overview-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-design='dell-1996'] .overview-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-design='dell-1996'] .overview-hero .server-download-banner {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .overview-panel {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .overview-stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .overview-stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 0 2px;
+}
+
+[data-design='dell-1996'] .overview-stats-title {
+  margin: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+[data-design='dell-1996'] .overview-stats-link {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .overview-stats-grid {
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .overview-quick-links {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+/* ── Overview strip ── */
+[data-design='dell-1996'] .overview-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .overview-strip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--tint-sky);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 10px 14px;
+  margin: 0;
+  text-align: left;
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .overview-strip-btn {
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.1s linear;
+}
+
+[data-design='dell-1996'] .overview-strip-btn--idle {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .overview-strip-item strong {
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+[data-design='dell-1996'] .text-ok { color: var(--tint-olive); }
+[data-design='dell-1996'] .text-warn { color: var(--dell-red); }
+
+/* ── Empty state ── */
+[data-design='dell-1996'] .empty-state-card {
+  border: 1px dashed var(--dell-frame);
+  border-radius: 0;
+  background: var(--tint-lime);
+  padding: 24px 20px;
+  text-align: center;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .empty-state-icon {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-yellow);
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+}
+
+[data-design='dell-1996'] .empty-state-card h3 {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .empty-state-card p {
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+/* ── Activity feed ── */
+[data-design='dell-1996'] .activity-summary,
+[data-design='dell-1996'] .history-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 0;
+  border-bottom: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .activity-summary strong,
+[data-design='dell-1996'] .history-summary strong {
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+[data-design='dell-1996'] .activity-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+[data-design='dell-1996'] .activity-item {
+  display: grid;
+  grid-template-columns: minmax(120px, 150px) 28px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--dell-frame);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .activity-item.ribbon-tint-sage { background: color-mix(in srgb, var(--tint-sage) 35%, white); }
+[data-design='dell-1996'] .activity-item.ribbon-tint-salmon { background: color-mix(in srgb, var(--tint-salmon) 35%, white); }
+[data-design='dell-1996'] .activity-item.ribbon-tint-sky { background: color-mix(in srgb, var(--tint-sky) 35%, white); }
+[data-design='dell-1996'] .activity-item.ribbon-tint-periwinkle { background: color-mix(in srgb, var(--tint-periwinkle) 35%, white); }
+[data-design='dell-1996'] .activity-item.ribbon-tint-lime { background: color-mix(in srgb, var(--tint-lime) 35%, white); }
+[data-design='dell-1996'] .activity-item.ribbon-tint-peach { background: color-mix(in srgb, var(--tint-peach) 35%, white); }
+[data-design='dell-1996'] .activity-item.ribbon-tint-steel { background: color-mix(in srgb, var(--tint-steel) 35%, white); }
+
+[data-design='dell-1996'] .activity-time {
+  font-size: 11px;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+[data-design='dell-1996'] .activity-body strong {
+  display: block;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .activity-meta,
+[data-design='dell-1996'] .activity-size {
+  display: block;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+[data-design='dell-1996'] .activity-error {
+  display: block;
+  font-size: 12px;
+  color: var(--dell-red);
+  margin-top: 4px;
+}
+
+/* ── History toolbar ── */
+[data-design='dell-1996'] .history-sort select {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  font-family: var(--font-body);
+  background: var(--dell-canvas);
+}
+
+/* ── Global search ── */
+[data-design='dell-1996'] .global-search {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  max-width: 280px;
+}
+
+[data-design='dell-1996'] .global-search input {
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-body);
+  background: transparent;
+}
+
+[data-design='dell-1996'] .global-search-kbd {
+  display: none;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  border: 1px solid var(--dell-frame);
+  padding: 2px 5px;
+  background: var(--tint-lime);
+  margin-right: 6px;
+}
+
+@media (min-width: 900px) {
+  [data-design='dell-1996'] .global-search-kbd {
+    display: inline-block;
+  }
+}
+
+[data-design='dell-1996'] .global-search-results {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .global-search-item {
+  border-radius: 0;
+  font-family: var(--font-body);
+}
+
+[data-design='dell-1996'] .global-search-item:hover {
+  background: var(--tint-sky);
+}
+
+/* ── Platform tiles ── */
+[data-design='dell-1996'] .platform-tile {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .platform-tile:hover {
+  background: var(--tint-peach);
+  transform: none;
+}
+
+[data-design='dell-1996'] .platform-tile-name {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ── Sidebar footer ── */
+[data-design='dell-1996'] .sidebar-footer {
+  border-top: 1px solid var(--dell-frame);
+  padding: 10px;
+  background: var(--tint-steel);
+}
+
+[data-design='dell-1996'] .user-chip {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .btn-logout {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .sidebar-platform-btn {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .sidebar-section-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ── Panel alert ── */
+[data-design='dell-1996'] .panel-alert {
+  border: 2px solid var(--dell-red);
+}
+
+[data-design='dell-1996'] .panel-alert .panel-head {
+  background: var(--tint-salmon);
+}
+
+/* ── Hints ── */
+[data-design='dell-1996'] .url-detect-hint,
+[data-design='dell-1996'] .cookies-hint,
+[data-design='dell-1996'] .settings-desc {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+[data-design='dell-1996'] .age-gate-hint {
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-peach);
+  padding: 8px 10px;
+  margin: 0;
+}
+
+/* ── Footer band ── */
+[data-design='dell-1996'] .dell-footer-band {
+  margin-top: 24px;
+  border-top: 2px solid var(--dell-frame);
+  padding: 16px;
+  background: var(--dell-canvas);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .dell-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--tint-lime);
+}
+
+[data-design='dell-1996'] .dell-footer-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--dell-ink);
+  padding: 6px 10px;
+}
+
+[data-design='dell-1996'] .dell-footer-nav-item:hover {
+  background: var(--tint-sky);
+}
+
+[data-design='dell-1996'] .dell-footer-legal,
+[data-design='dell-1996'] .dell-footer-compat {
+  text-align: center;
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+[data-design='dell-1996'] .dell-footer-compat {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .dell-footer-link {
+  font-size: 12px;
+}
+
+/* ── Status colors ── */
+[data-design='dell-1996'] .status-completed { background: var(--tint-lime); }
+[data-design='dell-1996'] .status-downloading { background: var(--tint-sky); }
+[data-design='dell-1996'] .status-queued { background: var(--dell-yellow); }
+[data-design='dell-1996'] .status-failed,
+[data-design='dell-1996'] .status-cancelled { background: var(--tint-salmon); }
+[data-design='dell-1996'] .status-paused { background: var(--tint-peach); }
+
+/* ── Analytics, lists, cards ── */
+[data-design='dell-1996'] .analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+[data-design='dell-1996'] .analytics-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+[data-design='dell-1996'] .analytics-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--dell-frame);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .analytics-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+[data-design='dell-1996'] .activity-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 140px;
+  padding-top: 8px;
+}
+
+[data-design='dell-1996'] .activity-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .activity-bar {
+  width: 100%;
+  max-width: 36px;
+  background: var(--dell-red);
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  min-height: 8px;
+}
+
+[data-design='dell-1996'] .activity-bar-label {
+  font-size: 10px;
+  font-family: Helvetica, Arial, sans-serif;
+  margin-top: 4px;
+}
+
+/* ── Analytics dashboard (enhanced) ── */
+[data-design='dell-1996'] .analytics-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-design='dell-1996'] .analytics-panel {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .analytics-updated {
+  margin: 0 0 4px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .analytics-summary-grid {
+  margin-bottom: 4px;
+}
+
+[data-design='dell-1996'] .analytics-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+[data-design='dell-1996'] .analytics-kpi {
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sage);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+[data-design='dell-1996'] .analytics-kpi-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-design='dell-1996'] .analytics-kpi strong {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+[data-design='dell-1996'] .analytics-kpi small {
+  font-family: var(--font-body);
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+[data-design='dell-1996'] .analytics-chart-tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--dell-frame);
+  margin-bottom: 12px;
+  width: fit-content;
+}
+
+[data-design='dell-1996'] .analytics-chart-tab {
+  padding: 8px 14px;
+  border: none;
+  background: var(--tint-steel);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+[data-design='dell-1996'] .analytics-chart-tab + .analytics-chart-tab {
+  border-left: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .analytics-chart-tab.active {
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .analytics-chart-footnote {
+  margin: 10px 0 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .analytics-vchart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 180px;
+  padding: 8px 4px 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .analytics-vchart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  height: 160px;
+}
+
+[data-design='dell-1996'] .analytics-vchart-value {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+[data-design='dell-1996'] .analytics-vchart-bar-track {
+  flex: 1;
+  width: 100%;
+  max-width: 40px;
+  display: flex;
+  align-items: flex-end;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+}
+
+[data-design='dell-1996'] .analytics-vchart-bar {
+  width: 100%;
+  min-height: 4px;
+  border-top: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .analytics-vchart-label {
+  font-size: 9px;
+  font-family: Helvetica, Arial, sans-serif;
+  margin-top: 4px;
+  text-align: center;
+}
+
+[data-design='dell-1996'] .analytics-hchart {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .analytics-hchart-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 100px) 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .analytics-hchart-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .analytics-hchart-track {
+  height: 18px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+  overflow: hidden;
+}
+
+[data-design='dell-1996'] .analytics-hchart-bar {
+  height: 100%;
+  min-width: 0;
+  border-right: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .analytics-hchart-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .analytics-donut-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .analytics-donut {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid var(--dell-frame);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+[data-design='dell-1996'] .analytics-donut-hole {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--dell-canvas);
+  border: 1px solid var(--dell-frame);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+}
+
+[data-design='dell-1996'] .analytics-donut-hole strong {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+[data-design='dell-1996'] .analytics-donut-hole span {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .analytics-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-design='dell-1996'] .analytics-donut-legend li {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .analytics-legend-swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .analytics-legend-label {
+  text-transform: capitalize;
+  font-weight: 700;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+}
+
+[data-design='dell-1996'] .analytics-legend-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+[data-design='dell-1996'] .analytics-heatmap {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+}
+
+@media (min-width: 769px) {
+  [data-design='dell-1996'] .analytics-heatmap {
+    grid-template-columns: repeat(24, 1fr);
+  }
+}
+
+[data-design='dell-1996'] .analytics-heatmap-cell {
+  aspect-ratio: 1;
+  border: 1px solid var(--dell-frame);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  min-height: 36px;
+}
+
+[data-design='dell-1996'] .analytics-heatmap-hour {
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+[data-design='dell-1996'] .analytics-heatmap-count {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .analytics-detail-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--dell-frame);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+[data-design='dell-1996'] .analytics-detail-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .analytics-metrics-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .analytics-metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+  align-items: center;
+}
+
+[data-design='dell-1996'] .analytics-metric-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+[data-design='dell-1996'] .analytics-metric-value small {
+  font-size: 10px;
+  font-weight: 400;
+  font-family: var(--font-body);
+}
+
+[data-design='dell-1996'] .analytics-table-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .analytics-table-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .analytics-table-row--fail {
+  background: color-mix(in srgb, var(--tint-salmon) 25%, white);
+}
+
+[data-design='dell-1996'] .analytics-rank,
+[data-design='dell-1996'] .analytics-table-icon {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding-top: 2px;
+}
+
+[data-design='dell-1996'] .analytics-table-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+[data-design='dell-1996'] .analytics-table-main strong {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+[data-design='dell-1996'] .analytics-table-main small {
+  font-family: var(--font-body);
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .analytics-table-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+[data-design='dell-1996'] .analytics-error-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .analytics-error-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-salmon);
+  align-items: start;
+}
+
+[data-design='dell-1996'] .analytics-error-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .analytics-error-msg {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+[data-design='dell-1996'] .analytics-grid--wide {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+[data-design='dell-1996'] .cookie-status-card,
+[data-design='dell-1996'] .auth-form-block,
+[data-design='dell-1996'] .folder-stat-card,
+[data-design='dell-1996'] .bookmark-item,
+[data-design='dell-1996'] .platform-card {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+[data-design='dell-1996'] .cookie-status-card {
+  padding: 12px 16px;
+}
+
+[data-design='dell-1996'] .cookie-status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--dell-frame) 25%, transparent);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .cookie-status-row strong {
+  font-family: Helvetica, Arial, sans-serif;
+  text-align: right;
+  word-break: break-word;
+}
+
+[data-design='dell-1996'] .auth-form-block {
+  padding: 14px 16px;
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .auth-form-block h3,
+[data-design='dell-1996'] .account-block-title {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .account-password-form input,
+[data-design='dell-1996'] .settings-panel input,
+[data-design='dell-1996'] .settings-panel select,
+[data-design='dell-1996'] .settings-panel textarea {
+  width: 100%;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .folder-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .folder-stat-card {
+  padding: 12px;
+  background: var(--tint-sky);
+}
+
+[data-design='dell-1996'] .folder-stat-card strong {
+  font-family: Helvetica, Arial, sans-serif;
+  text-transform: uppercase;
+  display: block;
+}
+
+[data-design='dell-1996'] .folder-path {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+  word-break: break-all;
+}
+
+[data-design='dell-1996'] .bookmark-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .bookmark-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--tint-peach);
+}
+
+[data-design='dell-1996'] .bookmark-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+[data-design='dell-1996'] .platform-card {
+  padding: 10px 12px;
+  background: var(--tint-sage);
+}
+
+[data-design='dell-1996'] .platform-intro {
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+[data-design='dell-1996'] .platform-note {
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-peach);
+  padding: 12px 16px;
+  margin: 0;
+  font-family: var(--font-body);
+}
+
+[data-design='dell-1996'] .platform-note h4 {
+  margin: 0 0 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .platform-note p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Security ── */
+[data-design='dell-1996'] .security-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-lime);
+  margin: 0;
+}
+
+[data-design='dell-1996'] .security-hero-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .security-hero-text h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+[data-design='dell-1996'] .security-score {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--dell-red);
+  border: 2px solid var(--dell-frame);
+  padding: 8px 14px;
+  background: var(--dell-yellow);
+}
+
+[data-design='dell-1996'] .security-score.is-full {
+  background: var(--tint-lime);
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .security-list,
+[data-design='dell-1996'] .security-tips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .security-item,
+[data-design='dell-1996'] .security-tips li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .security-item.is-ok { background: var(--tint-lime); }
+[data-design='dell-1996'] .security-item.is-warn { background: var(--tint-salmon); }
+
+/* ── Logs ── */
+/* ── Logs: terminal-style console with catalog filter chrome ── */
+[data-design='dell-1996'] .logs-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+[data-design='dell-1996'] .logs-filter-group {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .logs-chip {
+  border: none;
+  border-right: 1px solid var(--dell-frame);
+  border-radius: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  background: var(--dell-canvas);
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .logs-filter-group .logs-chip:last-child {
+  border-right: none;
+}
+
+[data-design='dell-1996'] .logs-chip:hover {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .logs-chip.active {
+  background: var(--dell-frame);
+  color: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .logs-chip-warn.active {
+  background: #b8860b;
+  color: #000;
+}
+
+[data-design='dell-1996'] .logs-chip-error.active {
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .logs-select,
+[data-design='dell-1996'] .logs-search {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  font-family: var(--font-body);
+  background: var(--dell-canvas);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .logs-search {
+  flex: 1 1 180px;
+  min-width: 150px;
+}
+
+[data-design='dell-1996'] .logs-auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--dell-ink);
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-lime);
+  padding: 4px 8px;
+}
+
+[data-design='dell-1996'] .logs-auto input {
+  accent-color: var(--dell-red);
+}
+
+[data-design='dell-1996'] .logs-console {
+  border: 2px solid var(--dell-frame);
+  background: #0c0c0c;
+  color: #d8d8d8;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 6px 0;
+}
+
+[data-design='dell-1996'] .logs-row {
+  display: grid;
+  grid-template-columns: auto auto auto 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 3px 12px;
+  border-bottom: none;
+}
+
+[data-design='dell-1996'] .logs-row:hover {
+  background: #1c1c1c;
+}
+
+[data-design='dell-1996'] .logs-row.logs-warn {
+  background: rgba(252, 194, 15, 0.12);
+  box-shadow: inset 3px 0 0 #fcc20f;
+}
+
+[data-design='dell-1996'] .logs-row.logs-error {
+  background: rgba(233, 29, 42, 0.16);
+  box-shadow: inset 3px 0 0 var(--dell-red);
+}
+
+[data-design='dell-1996'] .logs-time {
+  color: #7f9cb5;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .logs-level {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .logs-level-debug { color: #8a8a8a; }
+[data-design='dell-1996'] .logs-level-info { color: #5fb0ff; }
+[data-design='dell-1996'] .logs-level-warn { color: #f2c14e; }
+[data-design='dell-1996'] .logs-level-error { color: #ff6b6b; }
+
+[data-design='dell-1996'] .logs-scope {
+  color: #8fd694;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+[data-design='dell-1996'] .logs-msg {
+  color: #e8e8e8;
+  word-break: break-word;
+}
+
+[data-design='dell-1996'] .logs-meta {
+  color: #9aa7b3;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .logs-empty {
+  color: #9aa7b3;
+  font-family: var(--font-mono);
+  padding: 16px;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .logs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  [data-design='dell-1996'] .logs-row {
+    grid-template-columns: auto 1fr;
+    gap: 4px 10px;
+  }
+
+  [data-design='dell-1996'] .logs-scope {
+    grid-column: 1 / -1;
+  }
+}
+
+[data-design='dell-1996'] .panel-logs .dell-section-eyebrow {
+  flex-wrap: wrap;
+}
+
+/* ── Global search layout ── */
+[data-design='dell-1996'] .global-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .global-search-input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 4.5rem !important;
+}
+
+[data-design='dell-1996'] .global-search-kbd {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  border: 1px solid var(--dell-frame);
+  padding: 2px 5px;
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .global-search-clear {
+  position: absolute;
+  right: 8px;
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-yellow);
+}
+
+@media (min-width: 900px) {
+  [data-design='dell-1996'] .global-search-kbd {
+    display: inline-block;
+  }
+
+  [data-design='dell-1996'] .global-search.is-open .global-search-input {
+    padding-right: 2rem !important;
+  }
+}
+
+/* ── SweetAlert (dialogs) ── */
+[data-design='dell-1996'] .swal2-popup {
+  border: 2px solid var(--dell-frame) !important;
+  border-radius: 0 !important;
+  font-family: var(--font-body) !important;
+}
+
+[data-design='dell-1996'] .swal2-title {
+  font-family: var(--font-display) !important;
+  text-transform: uppercase;
+  font-size: 18px !important;
+}
+
+[data-design='dell-1996'] .swal2-confirm {
+  border-radius: 0 !important;
+  background: var(--dell-frame) !important;
+  font-family: Helvetica, Arial, sans-serif !important;
+  font-weight: 700 !important;
+}
+
+[data-design='dell-1996'] .swal2-cancel {
+  border-radius: 0 !important;
+  border: 1px solid var(--dell-frame) !important;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  [data-design='dell-1996'] {
+    --dell-frame-inset: 4px;
+  }
+
+  [data-design='dell-1996'] .welcome-banner {
+    grid-template-columns: 1fr;
+  }
+
+  [data-design='dell-1996'] .dell-cert-seal {
+    display: none;
+  }
+
+  [data-design='dell-1996'] .dell-top-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  [data-design='dell-1996'] .new-download-grid {
+    grid-template-columns: 1fr;
+  }
+
+  [data-design='dell-1996'] .new-download-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  [data-design='dell-1996'] .new-download-actions .btn-primary,
+  [data-design='dell-1996'] .new-download-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  [data-design='dell-1996'] .stats-grid,
+  [data-design='dell-1996'] .overview-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-design='dell-1996'] .welcome-banner {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  [data-design='dell-1996'] .welcome-cta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  [data-design='dell-1996'] .dell-cert-seal {
+    margin: 0 auto;
+  }
+
+  [data-design='dell-1996'] .overview-strip {
+    flex-direction: column;
+  }
+
+  [data-design='dell-1996'] .overview-strip-item {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  [data-design='dell-1996'] .activity-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  [data-design='dell-1996'] .dashboard-content {
+    padding: 12px 10px 96px;
+  }
+
+  [data-design='dell-1996'] .dell-footer-band {
+    display: none;
+  }
+
+  [data-design='dell-1996'] .global-search {
+    display: flex !important;
+    max-width: 100%;
+    flex: 1;
+  }
+
+  [data-design='dell-1996'] .topbar-left {
+    flex-wrap: wrap;
+  }
+
+  [data-design='dell-1996'] .bookmark-item {
+    flex-wrap: wrap;
+  }
+
+  [data-design='dell-1996'] .bookmark-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  [data-design='dell-1996'] .sidebar-backdrop.visible {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: none;
+  }
+
+  [data-design='dell-1996'] .sidebar-close-btn,
+  [data-design='dell-1996'] .mobile-menu-btn {
+    border-radius: 0;
+    border: 1px solid var(--dell-frame);
+    background: var(--dell-yellow);
+  }
+
+  [data-design='dell-1996'] .mobile-bottom-nav {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  [data-design='dell-1996'] .mobile-nav-item.accent .mobile-nav-icon-wrap {
+    background: var(--dell-red) !important;
+    color: var(--dell-canvas) !important;
+    border: 1px solid var(--dell-frame) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-design='dell-1996'] .logs-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  [data-design='dell-1996'] .security-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ENHANCEMENTS — download item spacing, status chips, auth cards,
+   platform tiles. Appended last so these win on equal specificity.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Download item: even vertical rhythm so actions/stats aren't cramped ── */
+[data-design='dell-1996'] .download-item .download-stats {
+  padding-top: 8px;
+  padding-bottom: 4px;
+  font-family: var(--font-body);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+[data-design='dell-1996'] .download-item .progress-bar {
+  margin-top: 10px;
+}
+
+[data-design='dell-1996'] .download-item .path-row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+[data-design='dell-1996'] .download-item .download-path {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-all;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .download-item .download-error,
+[data-design='dell-1996'] .download-item .download-info {
+  margin: 8px 12px 0;
+}
+
+[data-design='dell-1996'] .download-item .download-auth-note {
+  margin: 8px 12px 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-peach);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+}
+
+/* Item actions: clear top border + breathing room so Remove/Retry sit cleanly */
+[data-design='dell-1996'] .download-item .item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 12px 12px;
+  margin: 0;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .download-item .download-details + .item-actions {
+  margin-top: 0;
+  border-top: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .download-item .item-actions .btn-secondary,
+[data-design='dell-1996'] .download-item .item-actions .btn-danger,
+[data-design='dell-1996'] .download-item .item-actions .btn-primary {
+  padding: 6px 14px;
+}
+
+/* ── Status chips: crisp catalog tags with a leading LED block ── */
+[data-design='dell-1996'] .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 7px;
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-canvas);
+  flex-shrink: 0;
+}
+
+[data-design='dell-1996'] .status-downloading::before { background: #1d6fe0; }
+[data-design='dell-1996'] .status-completed::before { background: #1f9d3a; }
+[data-design='dell-1996'] .status-queued::before { background: var(--dell-yellow); }
+[data-design='dell-1996'] .status-paused::before { background: var(--tint-peach); }
+[data-design='dell-1996'] .status-failed::before,
+[data-design='dell-1996'] .status-cancelled::before { background: var(--dell-red); }
+
+/* Downloading chip gets a subtle blink so "live" jobs read at a glance */
+[data-design='dell-1996'] .status-downloading::before {
+  animation: dellBlink 1.1s steps(1) infinite;
+}
+
+@keyframes dellBlink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.35; }
+}
+
+/* ── Auth method cards (Platform Auth) ── */
+[data-design='dell-1996'] .auth-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  width: 100%;
+}
+
+[data-design='dell-1996'] .auth-method-card {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  cursor: pointer;
+  overflow: visible;
+}
+
+[data-design='dell-1996'] .auth-method-card:hover {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .auth-method-card.selected {
+  background: var(--tint-sky);
+  border-color: var(--dell-frame);
+  box-shadow: inset 4px 0 0 var(--dell-red);
+  padding-left: 10px;
+}
+
+[data-design='dell-1996'] .auth-method-card input[type='radio'] {
+  margin: 3px 0 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--dell-red);
+  flex-shrink: 0;
+}
+
+/* Text column — minmax(0,1fr) in grid + normal wrapping prevents right-edge clipping */
+[data-design='dell-1996'] .auth-method-text {
+  min-width: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+[data-design='dell-1996'] .auth-method-card strong,
+[data-design='dell-1996'] .auth-method-text strong {
+  display: block;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+[data-design='dell-1996'] .auth-method-card span,
+[data-design='dell-1996'] .auth-method-text span {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.45;
+  color: #444;
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+[data-design='dell-1996'] .block-sub {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 8px 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .block-help {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+[data-design='dell-1996'] .cookie-tips {
+  margin: 0;
+  padding-left: 1.25rem;
+  line-height: 1.55;
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .cookie-tips li {
+  margin-bottom: 4px;
+}
+
+[data-design='dell-1996'] .cookie-tips li:last-child {
+  margin-bottom: 0;
+}
+
+[data-design='dell-1996'] .settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+[data-design='dell-1996'] .settings-ok {
+  font-family: var(--font-body);
+  font-size: 13px;
+  border-left: 4px solid var(--tint-olive);
+  padding-left: 10px;
+  margin-top: 10px;
+}
+
+[data-design='dell-1996'] .domain-badge {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+[data-design='dell-1996'] .domain-badge.ok { background: var(--tint-lime); }
+[data-design='dell-1996'] .domain-badge.missing { background: var(--tint-salmon); }
+
+[data-design='dell-1996'] .cookie-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+/* ── Featured platform tiles (Overview + Platforms) ── */
+[data-design='dell-1996'] .featured-platforms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .platform-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .platform-tile.compact {
+  padding: 12px 6px;
+}
+
+[data-design='dell-1996'] .platform-tile-name {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* "See all 167+" link sits in the eyebrow — keep it readable */
+[data-design='dell-1996'] .dell-section-eyebrow .btn-link {
+  font-family: var(--font-body);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Platform category section + cards in the Platforms view */
+[data-design='dell-1996'] .platform-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-design='dell-1996'] .platform-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+[data-design='dell-1996'] .platform-card-body strong {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .platform-card-body p {
+  font-family: var(--font-body);
+  font-size: 12px;
+  margin: 2px 0 0;
+}
+
+[data-design='dell-1996'] .cookie-badge {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-yellow);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+}
+
+[data-design='dell-1996'] .category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+[data-design='dell-1996'] .platform-search {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  font-family: var(--font-body);
+  padding: 8px 10px;
+}
+
+[data-design='dell-1996'] .platform-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .platforms-hero .platform-intro {
+  margin: 0 0 4px;
+  line-height: 1.5;
+}
+
+[data-design='dell-1996'] .panel-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .auth-form-block label {
+  display: block;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 10px 0 4px;
+}
+
+[data-design='dell-1996'] .auth-form-block label:first-of-type {
+  margin-top: 0;
+}
+
+[data-design='dell-1996'] .auth-form-block input,
+[data-design='dell-1996'] .auth-form-block select,
+[data-design='dell-1996'] .auth-form-block textarea {
+  width: 100%;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+[data-design='dell-1996'] .files-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .files-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .files-table th,
+[data-design='dell-1996'] .files-table td {
+  border-bottom: 1px solid var(--dell-frame);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+[data-design='dell-1996'] .files-table th {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--tint-steel);
+}
+
+[data-design='dell-1996'] .files-table tr:hover td {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .file-ext-badge {
+  display: inline-block;
+  border: 1px solid var(--dell-frame);
+  padding: 2px 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--dell-yellow);
+}
+
+[data-design='dell-1996'] .file-name {
+  word-break: break-all;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .history-filters,
+[data-design='dell-1996'] .history-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .history-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .security-hero .settings-desc {
+  color: var(--dell-ink);
+  opacity: 1;
+}
+
+[data-design='dell-1996'] .bulk-preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--dell-frame);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+[data-design='dell-1996'] .bulk-preview-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--dell-frame) 20%, transparent);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .bulk-preview-item:last-child {
+  border-bottom: none;
+}
+
+[data-design='dell-1996'] .bulk-preview-type {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+}
+
+[data-design='dell-1996'] .bulk-preview-type-media {
+  background: var(--tint-sky);
+}
+
+[data-design='dell-1996'] .bulk-preview-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .bulk-preview-size {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .bulk-preview-more {
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--dell-ink);
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .bulk-media-options {
+  margin-top: 12px;
+}
+
+[data-design='dell-1996'] .bulk-media-options-label {
+  margin: 0 0 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .bulk-media-chips {
+  margin-bottom: 4px;
+}
+
+[data-design='dell-1996'] .playlist-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sky);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+[data-design='dell-1996'] .playlist-toggle input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+[data-design='dell-1996'] .playlist-toggle-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .playlist-toggle-hint--auth {
+  color: var(--dell-red);
+  opacity: 1;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .bookmark-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .files-summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .bulk-playlist-toggle {
+  background: var(--tint-peach);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   COMPREHENSIVE PASS — neutralize Dashboard.css / Login.css leaks
+   (Dashboard.css loads after this file; these rules must win.)
+   ════════════════════════════════════════════════════════════════ */
+
+/* Layout grids — zero rem margins, catalog gaps */
+[data-design='dell-1996'] .stats-grid,
+[data-design='dell-1996'] .analytics-grid,
+[data-design='dell-1996'] .folder-stats-grid {
+  margin: 0;
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .stat-card {
+  padding: 14px 16px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+[data-design='dell-1996'] .stat-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+[data-design='dell-1996'] .stat-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--dell-ink);
+  letter-spacing: 0;
+}
+
+[data-design='dell-1996'] .stat-card strong,
+[data-design='dell-1996'] .stat-value {
+  font-size: 1.65rem;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+[data-design='dell-1996'] .panel-alert {
+  background: var(--tint-salmon);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+/* ── New download page ── */
+[data-design='dell-1996'] .panel-new-download {
+  overflow: visible;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .new-download-body {
+  gap: 14px;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .new-download-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--dell-frame);
+  padding: 0;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .new-download-tabs .mode-tab {
+  border: none;
+  border-radius: 0;
+  padding: 10px 14px;
+  background: var(--tint-steel);
+}
+
+[data-design='dell-1996'] .new-download-tabs .mode-tab + .mode-tab {
+  border-left: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .new-download-tabs .mode-tab.active {
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .new-download-drop {
+  border-width: 2px;
+  border-style: dashed;
+  background: linear-gradient(180deg, var(--tint-lime) 0%, var(--dell-canvas) 100%);
+  padding: 24px 16px;
+}
+
+[data-design='dell-1996'] .new-download-drop strong {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .new-download-drop span {
+  font-family: var(--font-body);
+  font-size: 12px;
+  max-width: 420px;
+  line-height: 1.45;
+}
+
+[data-design='dell-1996'] .new-download-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .new-download-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  gap: 16px;
+  align-items: start;
+}
+
+[data-design='dell-1996'] .new-download-main,
+[data-design='dell-1996'] .new-download-side {
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .new-download-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-design='dell-1996'] .new-download-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px;
+  padding: 0 0 8px;
+  border-bottom: 2px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-design='dell-1996'] .new-download-options-card {
+  padding: 14px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sage);
+  gap: 12px;
+}
+
+[data-design='dell-1996'] .new-download-options-card select,
+[data-design='dell-1996'] .new-download-options-card input[type='text'] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[data-design='dell-1996'] .new-download-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] .new-download-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--dell-frame);
+  opacity: 0.35;
+}
+
+[data-design='dell-1996'] .new-download-divider-label {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+[data-design='dell-1996'] .new-download-divider:not(:has(.new-download-divider-label))::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--dell-frame);
+  opacity: 0.35;
+}
+
+[data-design='dell-1996'] .connections-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .connections-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+[data-design='dell-1996'] .connections-title {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-design='dell-1996'] .connections-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-yellow);
+}
+
+[data-design='dell-1996'] .connections-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .connections-preset {
+  padding: 8px 10px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+}
+
+[data-design='dell-1996'] .connections-preset:hover {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .connections-preset.active {
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+  border-color: var(--dell-frame);
+}
+
+[data-design='dell-1996'] .connections-range {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--dell-red);
+}
+
+[data-design='dell-1996'] .connections-hint--media {
+  padding: 8px 10px;
+  border: 1px dashed var(--dell-frame);
+  background: var(--tint-sky);
+}
+
+[data-design='dell-1996'] .new-download-media--full {
+  width: 100%;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .media-picker--empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px dashed var(--dell-frame);
+  background: var(--tint-peach);
+  margin: 0;
+}
+
+[data-design='dell-1996'] .new-download-ai-toggle {
+  margin-top: 4px;
+}
+
+[data-design='dell-1996'] .url-detect-hint--boxed {
+  padding: 8px 10px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sky);
+}
+
+[data-design='dell-1996'] .url-detect-hint--status {
+  font-style: italic;
+}
+
+[data-design='dell-1996'] .url-detect-hint--ok {
+  border: 1px solid var(--tint-olive);
+  background: var(--tint-lime);
+  padding: 8px 10px;
+}
+
+[data-design='dell-1996'] .bulk-url-textarea {
+  min-height: 160px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+[data-design='dell-1996'] .new-download-toolbar {
+  padding-top: 4px;
+}
+
+[data-design='dell-1996'] .new-download-media {
+  margin-top: 4px;
+}
+
+[data-design='dell-1996'] .chip-best {
+  background: var(--dell-yellow);
+}
+
+[data-design='dell-1996'] .new-download-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  border: none;
+}
+
+[data-design='dell-1996'] .new-download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .btn-lg {
+  padding: 10px 20px;
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .new-download-error {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .new-download-recent {
+  padding: 0;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .new-download-recent .recent-urls-list {
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .server-download-note--compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sky);
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+/* New download — form layout (shared) */
+[data-design='dell-1996'] .form-row,
+[data-design='dell-1996'] .form-toolbar,
+[data-design='dell-1996'] .form-actions,
+[data-design='dell-1996'] .connections-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+}
+
+[data-design='dell-1996'] .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+[data-design='dell-1996'] .connections-hint,
+[data-design='dell-1996'] .filename-ai-hint {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+[data-design='dell-1996'] .url-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+[data-design='dell-1996'] .url-input-wrap input {
+  padding-left: 2.25rem;
+}
+
+[data-design='dell-1996'] .url-input-icon {
+  position: absolute;
+  left: 10px;
+  pointer-events: none;
+}
+
+[data-design='dell-1996'] .drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body);
+}
+
+[data-design='dell-1996'] .drop-zone.drag-over {
+  background: var(--tint-sky);
+  transform: none;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .drop-zone-icon {
+  color: var(--dell-ink);
+}
+
+[data-design='dell-1996'] input[type='range'] {
+  width: 100%;
+  accent-color: var(--dell-red);
+}
+
+/* Recent URLs */
+[data-design='dell-1996'] .recent-urls {
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .recent-urls-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .recent-urls-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .recent-url-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  max-width: 100%;
+}
+
+[data-design='dell-1996'] .recent-url-chip:hover {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .recent-url-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+/* Media format picker */
+[data-design='dell-1996'] .media-picker {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--tint-peach);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+[data-design='dell-1996'] .media-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+[data-design='dell-1996'] .media-thumb {
+  width: 80px;
+  height: 56px;
+  object-fit: cover;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+}
+
+[data-design='dell-1996'] .media-title {
+  margin: 0 0 4px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .media-sub {
+  margin: 0 0 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+[data-design='dell-1996'] .media-source {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-yellow);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .media-label {
+  margin: 8px 0 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .media-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+[data-design='dell-1996'] .chip,
+[data-design='dell-1996'] .chip-audio {
+  padding: 6px 12px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+[data-design='dell-1996'] .chip:hover,
+[data-design='dell-1996'] .chip-audio:hover {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .chip.active,
+[data-design='dell-1996'] .chip-audio.active {
+  background: var(--tint-lime);
+  box-shadow: inset 0 0 0 1px var(--dell-frame);
+}
+
+/* Download card misc */
+[data-design='dell-1996'] .download-thumb {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .download-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-design='dell-1996'] .download-id,
+[data-design='dell-1996'] .stat-muted {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+[data-design='dell-1996'] .download-path {
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
+[data-design='dell-1996'] .private-tag,
+[data-design='dell-1996'] .type-tag {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  padding: 2px 6px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .private-tag {
+  background: var(--tint-salmon);
+}
+
+[data-design='dell-1996'] .btn-sm {
+  padding: 5px 10px !important;
+  min-height: auto !important;
+  font-size: 11px !important;
+  border-radius: 0 !important;
+}
+
+[data-design='dell-1996'] .ai-badge {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-yellow);
+  padding: 1px 5px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Sidebar */
+[data-design='dell-1996'] .nav-badge,
+[data-design='dell-1996'] .nav-badge-warn {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-yellow);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  animation: none;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .nav-badge-warn {
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+}
+
+[data-design='dell-1996'] .user-avatar {
+  border-radius: 0;
+  background: var(--dell-red);
+  border: 1px solid var(--dell-frame);
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .user-chip-btn {
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-design='dell-1996'] .user-chip-btn:hover {
+  background: var(--tint-lime);
+  transform: none;
+}
+
+[data-design='dell-1996'] .sidebar-platforms {
+  margin: 0;
+  padding: 10px 12px;
+  border-top: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .sidebar-platform-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+[data-design='dell-1996'] .sidebar-platform-btn:hover {
+  transform: none;
+  filter: none;
+  background: var(--tint-lime);
+}
+
+/* Platforms */
+[data-design='dell-1996'] .platforms-hero,
+[data-design='dell-1996'] .account-info-card {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .platform-category-section {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .platform-category-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--dell-frame);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .cat-engine,
+[data-design='dell-1996'] .cat-count {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--dell-yellow);
+}
+
+[data-design='dell-1996'] .platform-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .platform-icon-wrap,
+[data-design='dell-1996'] .platform-favicon-wrap,
+[data-design='dell-1996'] .platform-favicon {
+  border-radius: 0;
+}
+
+[data-design='dell-1996'] .platform-settings-panel code {
+  border-radius: 0;
+  background: var(--tint-steel);
+  border: 1px solid var(--dell-frame);
+}
+
+/* Bookmarks */
+[data-design='dell-1996'] .bookmark-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+[data-design='dell-1996'] .bookmark-body strong {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-design='dell-1996'] .bookmark-body span {
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+/* Files */
+[data-design='dell-1996'] .files-toolbar select {
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .folder-stat-card {
+  text-align: left;
+  cursor: pointer;
+  padding: 12px;
+}
+
+[data-design='dell-1996'] .folder-stat-card:hover,
+[data-design='dell-1996'] .folder-stat-card.active {
+  background: var(--tint-sky);
+  border-color: var(--dell-frame);
+  box-shadow: inset 4px 0 0 var(--dell-red);
+  transform: none;
+}
+
+[data-design='dell-1996'] .folder-path {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-all;
+}
+
+/* Help quick links */
+[data-design='dell-1996'] .help-links .quick-link-card {
+  text-align: left;
+}
+
+[data-design='dell-1996'] .cookie-steps,
+[data-design='dell-1996'] .works-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dell-ink);
+}
+
+/* Global search */
+[data-design='dell-1996'] .global-search-input:focus {
+  outline: 2px solid var(--dell-frame);
+  border-color: var(--dell-frame);
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .global-search-item-body {
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+[data-design='dell-1996'] .global-search-empty {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 12px;
+}
+
+[data-design='dell-1996'] .overview-strip-btn:hover {
+  background: var(--tint-lime);
+  border-color: var(--dell-frame);
+}
+
+/* Mobile bottom nav */
+[data-design='dell-1996'] .mobile-nav-item {
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-design='dell-1996'] .mobile-nav-icon-wrap {
+  border-radius: 0;
+  border: 1px solid transparent;
+}
+
+[data-design='dell-1996'] .mobile-nav-item.active .mobile-nav-icon-wrap {
+  background: var(--tint-sky);
+  border-color: var(--dell-frame);
+}
+
+[data-design='dell-1996'] .mobile-nav-badge {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-red);
+  color: var(--dell-canvas);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .mobile-nav-label {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Login page */
+[data-design='dell-1996'] .login-page {
+  background: var(--dell-canvas);
+  padding: 16px;
+}
+
+[data-design='dell-1996'] .login-page::before,
+[data-design='dell-1996'] .login-page::after {
+  display: none;
+}
+
+[data-design='dell-1996'] .login-card {
+  border: 2px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  padding: 24px 20px;
+  animation: none;
+}
+
+[data-design='dell-1996'] .login-brand {
+  margin-bottom: 16px;
+}
+
+[data-design='dell-1996'] .login-logo {
+  border-radius: 0;
+  background: var(--dell-red);
+  border: 1px solid var(--dell-frame);
+  box-shadow: none;
+  animation: none;
+}
+
+[data-design='dell-1996'] .login-logo:hover {
+  transform: none;
+}
+
+[data-design='dell-1996'] .login-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+[data-design='dell-1996'] .login-form button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-frame);
+  color: var(--dell-canvas);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+[data-design='dell-1996'] .login-form button:hover:not(:disabled) {
+  background: var(--dell-red);
+}
+
+[data-design='dell-1996'] .login-form button:disabled {
+  opacity: 0.6;
+}
+
+/* SweetAlert custom classes (swal.js) */
+[data-design='dell-1996'] .rdm-swal-popup {
+  border: 2px solid var(--dell-frame) !important;
+  border-radius: 0 !important;
+  font-family: var(--font-body) !important;
+  box-shadow: none !important;
+}
+
+[data-design='dell-1996'] .rdm-swal-confirm {
+  border-radius: 0 !important;
+  background: var(--dell-frame) !important;
+  font-family: Helvetica, Arial, sans-serif !important;
+  font-weight: 700 !important;
+}
+
+[data-design='dell-1996'] .rdm-swal-cancel {
+  border-radius: 0 !important;
+  border: 1px solid var(--dell-frame) !important;
+}
+
+[data-design='dell-1996'] kbd {
+  border-radius: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-steel);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  padding: 2px 5px;
+}
+
+/* Security hero — standalone section, not a .panel */
+[data-design='dell-1996'] .security-hero {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .topbar {
+  padding: 12px 16px;
+}
+
+[data-design='dell-1996'] .dashboard-content {
+  padding: 16px 20px 24px;
+}
+
+[data-design='dell-1996'] .loading-logo-icon {
+  border-radius: 0;
+  border: 2px solid var(--dell-canvas);
+  background: var(--dell-red);
+}
+
+[data-design='dell-1996'] .form-error {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--dell-red);
+  background: var(--tint-salmon);
+  font-family: var(--font-body);
+  font-size: 13px;
+}

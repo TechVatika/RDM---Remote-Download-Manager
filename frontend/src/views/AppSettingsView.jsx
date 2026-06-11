@@ -1,28 +1,51 @@
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
+import AsyncPanel from '../components/AsyncPanel.jsx';
+
 export default function AppSettingsView({ appSettings, onNavigate }) {
   if (!appSettings) {
-    return (
-      <section className="panel settings-panel">
-        <p className="settings-desc">Loading settings…</p>
-      </section>
-    );
+    return <AsyncPanel title="APPLICATION SETTINGS" tint="steel" loading />;
   }
 
   return (
     <section className="panel settings-panel">
-      <h2>Application settings</h2>
+      <SectionEyebrow title="APPLICATION SETTINGS" tint="steel" />
+      <div className="panel-body">
       <p className="settings-desc">
         Server-side configuration. Most values are set in <code>backend/.env</code> and require a backend restart.
       </p>
 
       <div className="cookie-status-card">
         <div className="cookie-status-row">
-          <span>Download base path</span>
-          <strong>{appSettings.downloadPaths?.base}</strong>
+          <span>Staging path (active downloads)</span>
+          <strong>{appSettings.downloadPaths?.staging}</strong>
         </div>
         <div className="cookie-status-row">
-          <span>Folders</span>
-          <strong>{appSettings.downloadPaths?.folders?.join(', ')}</strong>
+          <span>Final library path</span>
+          <strong>{appSettings.downloadPaths?.final}</strong>
         </div>
+        {appSettings.stagingCleanup && (
+          <>
+            <div className="cookie-status-row">
+              <span>Staging auto-cleanup</span>
+              <strong>
+                {appSettings.stagingCleanup.enabled
+                  ? `Every ${appSettings.stagingCleanup.intervalHours}h when idle`
+                  : 'Disabled'}
+              </strong>
+            </div>
+            {appSettings.stagingCleanup.stagingFiles > 0 && (
+              <div className="cookie-status-row">
+                <span>Staging in use now</span>
+                <strong>
+                  {appSettings.stagingCleanup.stagingFiles} file(s)
+                  {appSettings.stagingCleanup.activeDownloads > 0
+                    ? ` · ${appSettings.stagingCleanup.activeDownloads} active job(s)`
+                    : ''}
+                </strong>
+              </div>
+            )}
+          </>
+        )}
         <div className="cookie-status-row">
           <span>Default connections</span>
           <strong>{appSettings.speed?.defaultConnections ?? appSettings.connections?.default ?? 16}</strong>
@@ -77,16 +100,6 @@ export default function AppSettingsView({ appSettings, onNavigate }) {
           Open Platform Auth
         </button>
       </div>
-
-      <div className="auth-form-block">
-        <h3>Environment variables</h3>
-        <ul className="works-list">
-          <li><code>DOWNLOAD_BASE_PATH</code> — where files are saved</li>
-          <li><code>DOWNLOAD_CONNECTIONS</code> / <code>DOWNLOAD_MAX_CONNECTIONS</code></li>
-          <li><code>PUBLIC_MEDIA_ONLY</code> — disable for private platform auth</li>
-          <li><code>GEMINI_API_KEY</code> / <code>AI_RENAME</code> — AI file naming</li>
-          <li><code>MAX_CONCURRENT_DOWNLOADS</code> — worker parallelism</li>
-        </ul>
       </div>
     </section>
   );

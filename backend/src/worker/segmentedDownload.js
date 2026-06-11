@@ -2,11 +2,8 @@ import fs from 'fs';
 import fsp from 'fs/promises';
 import path from 'path';
 import { Readable } from 'stream';
-import {
-  filenameFromDisposition,
-  filenameFromUrl,
-  sanitizeFilename,
-} from '../utils/filename.js';
+import { filenameFromUrl, sanitizeFilename } from '../utils/filename.js';
+import { inspectRemoteHttpUrl } from '../utils/httpInspect.js';
 
 const USER_AGENT =
   process.env.DOWNLOAD_USER_AGENT ||
@@ -19,6 +16,32 @@ import {
 } from '../config/speed.js';
 
 const MIN_SEGMENT_SIZE = MIN_SEGMENT_BYTES;
+// How many times to retry a segment that drops mid-transfer. Long downloads of
+// big files routinely hit transient resets / idle timeouts / server keep-alive
+// drops — without retries any one of those fails the whole job.
+const MAX_RETRIES = Number(process.env.DOWNLOAD_SEGMENT_RETRIES) || 6;
+
+function backoffDelay(attempt) {
+  return Math.min(1000 * 2 ** attempt, 20000); // 1s, 2s, 4s, 8s, 16s, 20s…
+}
+
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
+      return;
+    }
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
+      },
+      { once: true },
+    );
+  });
+}
 
 function buildHeaders(url, extra = {}, auth = null) {
   const parsed = new URL(url);
@@ -80,46 +103,19 @@ export function hasPartialJob(destDir, jobId) {
   return fs.existsSync(manifest) && fs.existsSync(part);
 }
 
-/** Inspect the target: total size + whether the server supports byte ranges. */
+/** Read saved segment progress from the on-disk manifest (for resume / orphan recovery). */
+export function readPartialProgress(destDir, jobId) {
+  const { manifest: manifestPath } = partPaths(destDir, jobId);
+  const manifest = loadManifest(manifestPath);
+  if (!manifest?.segments?.length) return null;
+  const bytesDownloaded = manifest.segments.reduce((sum, seg) => sum + (seg.done || 0), 0);
+  const fileSize = manifest.totalBytes || null;
+  const progress = fileSize ? Math.min(100, (bytesDownloaded / fileSize) * 100) : 0;
+  return { bytesDownloaded, fileSize, progress };
+}
+
 async function inspect(url, signal, auth) {
-  // A ranged GET of the first byte tells us size (Content-Range) and range support.
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: buildHeaders(url, { Range: 'bytes=0-0' }, auth),
-    redirect: 'follow',
-    signal,
-  });
-
-  if (!res.ok && res.status !== 206) {
-    throw httpError(res);
-  }
-
-  // Drain the tiny body so the socket can be reused.
-  try {
-    await res.arrayBuffer();
-  } catch {
-    /* ignore */
-  }
-
-  let totalBytes = null;
-  const contentRange = res.headers.get('content-range');
-  if (res.status === 206 && contentRange) {
-    const m = contentRange.match(/\/(\d+)\s*$/);
-    if (m) totalBytes = Number(m[1]);
-  }
-  if (totalBytes == null) {
-    const len = Number(res.headers.get('content-length'));
-    if (len) totalBytes = len;
-  }
-
-  const acceptRanges = (res.headers.get('accept-ranges') || '').toLowerCase();
-  const supportsRanges =
-    res.status === 206 || (acceptRanges.includes('bytes') && totalBytes != null);
-
-  const disposition = res.headers.get('content-disposition');
-  const headerName = filenameFromDisposition(disposition);
-
-  return { totalBytes, supportsRanges, headerName, finalUrl: res.url || url };
+  return inspectRemoteHttpUrl(url, { signal, auth });
 }
 
 function planSegments(totalBytes, connections) {
@@ -260,31 +256,45 @@ export async function downloadSegmented({
     report();
   }, 500);
 
-  async function runSegment(seg) {
+  async function runSegment(seg, attempt = 0) {
     if (seg.done > seg.end - seg.start) return; // already complete
     const rangeStart = seg.start + seg.done;
     if (rangeStart > seg.end) return;
 
-    const res = await fetch(trimmedUrl, {
-      method: 'GET',
-      headers: buildHeaders(trimmedUrl, {
-        Range: `bytes=${rangeStart}-${seg.end}`,
-      }, auth),
-      redirect: 'follow',
-      signal,
-    });
+    try {
+      const res = await fetch(trimmedUrl, {
+        method: 'GET',
+        headers: buildHeaders(trimmedUrl, {
+          Range: `bytes=${rangeStart}-${seg.end}`,
+        }, auth),
+        redirect: 'follow',
+        signal,
+      });
 
-    if (res.status !== 206 && res.status !== 200) {
-      throw httpError(res, 'on segment');
-    }
+      if (res.status !== 206 && res.status !== 200) {
+        throw httpError(res, 'on segment');
+      }
 
-    const nodeStream = Readable.fromWeb(res.body);
-    for await (const chunk of nodeStream) {
-      const writePos = seg.start + seg.done;
-      await fh.write(chunk, 0, chunk.length, writePos);
-      seg.done += chunk.length;
+      const nodeStream = Readable.fromWeb(res.body);
+      for await (const chunk of nodeStream) {
+        const writePos = seg.start + seg.done;
+        await fh.write(chunk, 0, chunk.length, writePos);
+        seg.done += chunk.length;
+        manifestDirty = true;
+        report();
+      }
+    } catch (err) {
+      // Pause/cancel and auth failures are terminal — never retry those.
+      if (signal?.aborted || err?.name === 'AbortError' || err?.authRequired) throw err;
+      if (attempt >= MAX_RETRIES) {
+        throw new Error(`${err.message} (gave up after ${attempt} retries)`);
+      }
+      // Persist progress so the resume range is correct, wait, then resume
+      // this segment from wherever it stopped (seg.done is already updated).
       manifestDirty = true;
-      report();
+      await persist();
+      await sleep(backoffDelay(attempt), signal);
+      return runSegment(seg, attempt + 1);
     }
   }
 

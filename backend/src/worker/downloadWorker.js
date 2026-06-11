@@ -13,6 +13,7 @@ import {
   downloadSegmented,
   cleanupSegmentedJob,
   hasPartialJob,
+  readPartialProgress,
 } from './segmentedDownload.js';
 import {
   consumeJobCredentials,
@@ -25,6 +26,7 @@ import {
   WORKER_POLL_MS,
 } from '../config/speed.js';
 import { logger } from '../utils/logger.js';
+import { startStagingCleanupScheduler } from '../utils/stagingCleanup.js';
 
 const log = logger.child('worker');
 
@@ -315,7 +317,7 @@ async function runJob(row) {
     const renamed = await maybeRenameDownload(row, rawResult);
     const result = {
       ...renamed,
-      filePath: finalizeDownloadPath(renamed.filePath, row.category),
+      filePath: await finalizeDownloadPath(renamed.filePath, row.category),
     };
 
     if (row.private) {
@@ -339,7 +341,8 @@ async function runJob(row) {
           [id],
         );
         log.info(`paused download #${id}${row.private ? ' (WARP off)' : ''}`, { id });
-      } else {
+      } else if (dbStatus === 'cancelled') {
+        // Genuine user cancel (the API set status='cancelled' in the DB).
         if (row.type !== 'media') {
           cleanupSegmentedJob(resolveDestination(row.category), id);
         }
@@ -354,15 +357,28 @@ async function runJob(row) {
           );
           log.info(`cancelled download #${id}`, { id });
         }
+      } else {
+        // Aborted but NOT by the user (worker restart/shutdown, or an
+        // unexpected abort). Keep the partial file and re-queue so the
+        // download resumes automatically — it must survive logout, tab
+        // close, API restarts and worker restarts.
+        await requeueForResume(
+          id,
+          row,
+          'Download interrupted — resuming automatically from saved progress…',
+        );
+        log.warn(`download #${id} interrupted — re-queued to resume`, { id });
       }
     } else if (hasPartial && isConnectionDropError(err)) {
-      clearJobCredentials(id);
-      const message = friendlyHttpDownloadError(err.message);
-      await pool.query(
-        `UPDATE downloads SET status = 'paused', error_message = ?, updated_at = NOW() WHERE id = ?`,
-        [message.slice(0, 2000), id],
+      // Connection dropped after exhausting per-segment retries. The partial is
+      // safe on disk — re-queue so the worker resumes from the manifest instead
+      // of stopping. (Per-segment backoff means this won't hammer a dead host.)
+      await requeueForResume(
+        id,
+        row,
+        friendlyHttpDownloadError(err.message),
       );
-      log.warn(`paused download #${id} after connection drop (partial saved on disk)`, {
+      log.warn(`download #${id} connection dropped — re-queued to resume from partial`, {
         id,
         error: err.message,
       });
@@ -478,16 +494,46 @@ export function pauseDownload(id) {
   return false;
 }
 
+async function requeueForResume(id, row, message) {
+  const partial =
+    row?.type !== 'media' ? readPartialProgress(resolveDestination(row.category), id) : null;
+  if (partial) {
+    await pool.query(
+      `UPDATE downloads
+       SET status = 'queued',
+           error_message = ?,
+           bytes_downloaded = ?,
+           file_size = COALESCE(?, file_size),
+           progress = ?,
+           updated_at = NOW()
+       WHERE id = ?`,
+      [
+        message || null,
+        partial.bytesDownloaded,
+        partial.fileSize,
+        partial.progress.toFixed(2),
+        id,
+      ],
+    );
+  } else {
+    await pool.query(
+      `UPDATE downloads SET status = 'queued', error_message = ?, updated_at = NOW() WHERE id = ?`,
+      [message || null, id],
+    );
+  }
+}
+
 async function recoverOrphanedJobs() {
   const [rows] = await pool.query(
-    `SELECT id FROM downloads WHERE status = 'downloading'`,
+    `SELECT id, category, type FROM downloads WHERE status = 'downloading'`,
   );
   if (!rows.length) return;
 
   for (const row of rows) {
-    await pool.query(
-      `UPDATE downloads SET status = 'queued', error_message = NULL, updated_at = NOW() WHERE id = ?`,
-      [row.id],
+    await requeueForResume(
+      row.id,
+      row,
+      'Worker restarted — resuming automatically from saved progress…',
     );
   }
   log.warn(`re-queued ${rows.length} orphaned job(s) after restart`, { count: rows.length });
@@ -495,6 +541,7 @@ async function recoverOrphanedJobs() {
 
 export function startDownloadWorker({ standalone = false } = {}) {
   log.info(`worker started`, { maxConcurrent: MAX_CONCURRENT, pollMs: POLL_MS, standalone });
+  startStagingCleanupScheduler();
   recoverOrphanedJobs()
     .catch((err) => log.error('recovery error', { error: err.message }))
     .finally(() => {

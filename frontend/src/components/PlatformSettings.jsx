@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../api/client.js';
 import { confirmAction, toastError, toastSuccess } from '../utils/swal.js';
+import SectionEyebrow from './SectionEyebrow.jsx';
 
 const METHOD_LABELS = {
   browser: 'Browser on server',
@@ -223,7 +224,10 @@ export default function PlatformSettings() {
   if (loading) {
     return (
       <section className="panel settings-panel">
-        <p className="settings-desc">Loading platform settings…</p>
+        <SectionEyebrow title="PLATFORM AUTHENTICATION" tint="periwinkle" />
+        <div className="panel-body">
+          <p className="settings-desc">Loading platform settings…</p>
+        </div>
       </section>
     );
   }
@@ -233,7 +237,8 @@ export default function PlatformSettings() {
 
   return (
     <section className="panel settings-panel platform-settings-panel">
-      <h2>Platform authentication</h2>
+      <SectionEyebrow title="PLATFORM AUTHENTICATION" tint="periwinkle" />
+      <div className="panel-body">
       <p className="settings-desc">
         Configure how RDM authenticates with Instagram, Facebook, and other cookie-gated sites.
         Most methods do not require a cookies.txt file.
@@ -318,7 +323,7 @@ export default function PlatformSettings() {
                     checked={adultProxyMode === 'warp'}
                     onChange={() => setAdultProxyMode('warp')}
                   />
-                  <div>
+                  <div className="auth-method-text">
                     <strong>Cloudflare WARP (recommended)</strong>
                     <span>Local SOCKS proxy — only yt-dlp adult URLs use WARP</span>
                   </div>
@@ -331,7 +336,7 @@ export default function PlatformSettings() {
                     checked={adultProxyMode === 'custom'}
                     onChange={() => setAdultProxyMode('custom')}
                   />
-                  <div>
+                  <div className="auth-method-text">
                     <strong>Custom proxy</strong>
                     <span>SSH tunnel, Tor, or another SOCKS/HTTP proxy</span>
                   </div>
@@ -412,7 +417,7 @@ export default function PlatformSettings() {
               checked={authMethod === m.id}
               onChange={() => setAuthMethod(m.id)}
             />
-            <div>
+            <div className="auth-method-text">
               <strong>{m.label}</strong>
               <span>{m.description}</span>
             </div>
@@ -556,6 +561,7 @@ export default function PlatformSettings() {
         <li>Session tokens expire — refresh when downloads fail with &quot;login required&quot;.</li>
         <li>Never share session tokens — they grant full account access.</li>
       </ul>
+      </div>
     </section>
   );
 }

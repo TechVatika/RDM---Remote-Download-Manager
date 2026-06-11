@@ -3,6 +3,7 @@ import { HiTrash } from 'react-icons/hi2';
 import { apiFetch } from '../api/client.js';
 import { formatBytes, formatDate } from '../utils/format.js';
 import { confirmAction, toastError, toastSuccess } from '../utils/swal.js';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
 
 function fileExt(name) {
   const i = name.lastIndexOf('.');
@@ -10,7 +11,6 @@ function fileExt(name) {
 }
 
 export default function FilesView() {
-  const [category, setCategory] = useState('general');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -19,12 +19,12 @@ export default function FilesView() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiFetch(`/api/files?category=${category}`);
+      const res = await apiFetch('/api/files');
       if (res.ok) setData(await res.json());
     } finally {
       setLoading(false);
     }
-  }, [category]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -59,7 +59,7 @@ export default function FilesView() {
       icon: 'warning',
     });
     if (!ok) return;
-    const res = await apiFetch(`/api/files/${category}/${encodeURIComponent(file.name)}`, {
+    const res = await apiFetch(`/api/files/${encodeURIComponent(file.name)}`, {
       method: 'DELETE',
     });
     const body = await res.json();
@@ -72,88 +72,83 @@ export default function FilesView() {
   };
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h2>File Browser</h2>
-        <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
-      </div>
+    <section className="panel panel-files">
+      <SectionEyebrow
+        title="FILE BROWSER"
+        tint="steel"
+        action={(
+          <button type="button" className="btn-secondary" onClick={load} disabled={loading}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        )}
+      />
 
-      {data?.folders && (
-        <div className="folder-stats-grid">
-          {data.folders.map((folder) => (
-            <button
-              key={folder.id}
-              type="button"
-              className={`folder-stat-card ${category === folder.id ? 'active' : ''}`}
-              onClick={() => setCategory(folder.id)}
-            >
-              <strong>{folder.id}</strong>
-              <span>{folder.count} file{folder.count !== 1 ? 's' : ''}</span>
-              <span className="folder-stat-bytes">{formatBytes(folder.totalBytes)}</span>
-            </button>
-          ))}
+      <div className="panel-body">
+        {data && (
+          <div className="files-summary-strip">
+            <span><strong>{data.count}</strong> file{data.count !== 1 ? 's' : ''}</span>
+            <span><strong>{formatBytes(data.totalBytes)}</strong> total</span>
+          </div>
+        )}
+
+        <div className="files-toolbar">
+          <input
+            type="search"
+            className="history-search"
+            placeholder="Search files…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort by">
+            <option value="modified">Newest first</option>
+            <option value="name">Name A–Z</option>
+            <option value="size">Largest first</option>
+          </select>
         </div>
-      )}
 
-      <div className="files-toolbar">
-        <input
-          type="search"
-          className="history-search"
-          placeholder="Search files…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort by">
-          <option value="modified">Newest first</option>
-          <option value="name">Name A–Z</option>
-          <option value="size">Largest first</option>
-        </select>
-      </div>
+        <p className="settings-desc">
+          Library folder: <code>{data?.path || '…'}</code>
+          {files.length !== data?.files?.length && ` · ${files.length} of ${data.files.length} shown`}
+        </p>
 
-      <p className="settings-desc">
-        Browsing: <code>{data?.path || '…'}</code>
-        {files.length !== data?.files?.length && ` · ${files.length} of ${data.files.length} shown`}
-      </p>
-
-      {loading ? (
-        <p className="settings-desc">Loading files…</p>
-      ) : !files.length ? (
-        <p className="settings-desc">No files in this folder yet.</p>
-      ) : (
-        <div className="files-table-wrap">
-          <table className="files-table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Name</th>
-                <th>Size</th>
-                <th>Modified</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {files.map((file) => (
-                <tr key={file.path}>
-                  <td><span className="file-ext-badge">{fileExt(file.name)}</span></td>
-                  <td className="file-name">{file.name}</td>
-                  <td>{formatBytes(file.size)}</td>
-                  <td>{formatDate(file.modified)}</td>
-                  <td className="file-actions-cell">
-                    <button type="button" className="btn-link" onClick={() => copyPath(file.path)}>
-                      Copy
-                    </button>
-                    <button type="button" className="btn-link btn-link-danger" onClick={() => deleteFile(file)}>
-                      <HiTrash size={14} />
-                    </button>
-                  </td>
+        {loading ? (
+          <p className="settings-desc">Loading files…</p>
+        ) : !files.length ? (
+          <p className="settings-desc">No files in the library folder yet.</p>
+        ) : (
+          <div className="files-table-wrap">
+            <table className="files-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Name</th>
+                  <th>Size</th>
+                  <th>Modified</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {files.map((file) => (
+                  <tr key={file.path}>
+                    <td><span className="file-ext-badge">{fileExt(file.name)}</span></td>
+                    <td className="file-name">{file.name}</td>
+                    <td>{formatBytes(file.size)}</td>
+                    <td>{formatDate(file.modified)}</td>
+                    <td className="file-actions-cell">
+                      <button type="button" className="btn-link" onClick={() => copyPath(file.path)}>
+                        Copy
+                      </button>
+                      <button type="button" className="btn-link btn-link-danger" onClick={() => deleteFile(file)}>
+                        <HiTrash size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

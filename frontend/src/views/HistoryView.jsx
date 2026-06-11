@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import EmptyState from '../components/EmptyState.jsx';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
+import { formatBytes } from '../utils/format.js';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -29,13 +31,18 @@ const sorters = {
 
 export default function HistoryView({
   history,
+  initialFilter = 'all',
   onClearHistory,
   onRetryFailed,
   renderDownloadItem,
 }) {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(initialFilter);
   const [sort, setSort] = useState('newest');
+
+  useEffect(() => {
+    setFilter(initialFilter);
+  }, [initialFilter]);
 
   const filtered = useMemo(() => {
     const out = history.filter((d) => {
@@ -53,62 +60,76 @@ export default function HistoryView({
   }, [history, filter, search, sort]);
 
   const failedCount = history.filter((d) => d.status === 'failed').length;
+  const completedCount = history.filter((d) => d.status === 'completed').length;
+  const totalBytes = history
+    .filter((d) => d.status === 'completed')
+    .reduce((sum, d) => sum + (Number(d.file_size) || 0), 0);
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h2>History ({filtered.length})</h2>
-        <div className="panel-head-actions">
-          {failedCount > 0 && (
-            <button type="button" className="btn-secondary" onClick={onRetryFailed}>
-              Retry failed ({failedCount})
+    <section className="panel panel-history">
+      <SectionEyebrow
+        title={`DOWNLOAD HISTORY (${filtered.length})`}
+        tint="lime"
+        action={(
+          <div className="panel-head-actions">
+            {failedCount > 0 && (
+              <button type="button" className="btn-secondary" onClick={onRetryFailed}>
+                Retry failed ({failedCount})
+              </button>
+            )}
+            <button type="button" className="btn-danger" onClick={onClearHistory}>
+              Clear finished
             </button>
-          )}
-          <button type="button" className="btn-danger" onClick={onClearHistory}>
-            Clear finished
-          </button>
+          </div>
+        )}
+      />
+      <div className="panel-body">
+        <div className="history-summary">
+          <span><strong>{completedCount}</strong> completed</span>
+          <span><strong>{failedCount}</strong> failed</span>
+          <span><strong>{formatBytes(totalBytes)}</strong> total saved</span>
         </div>
-      </div>
 
-      <div className="history-filters">
-        {FILTERS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            className={`category-tab ${filter === id ? 'active' : ''}`}
-            onClick={() => setFilter(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+        <div className="history-filters">
+          {FILTERS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className={`category-tab ${filter === id ? 'active' : ''}`}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-      <div className="history-toolbar">
-        <input
-          type="search"
-          className="history-search"
-          placeholder="Search by title, URL, or path…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <label className="history-sort">
-          <span>Sort</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value)}>
-            {SORTS.map(({ id, label }) => (
-              <option key={id} value={id}>{label}</option>
-            ))}
-          </select>
-        </label>
-      </div>
+        <div className="history-toolbar">
+          <input
+            type="search"
+            className="history-search"
+            placeholder="Search by title, URL, or path…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <label className="history-sort">
+            <span>Sort</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+              {SORTS.map(({ id, label }) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          title="No matching history"
-          description="Completed and failed downloads will appear here."
-        />
-      ) : (
-        <ul className="download-list">{filtered.map((i) => renderDownloadItem(i))}</ul>
-      )}
+        {filtered.length === 0 ? (
+          <EmptyState
+            title="No matching history"
+            description="Completed and failed downloads will appear here."
+          />
+        ) : (
+          <ul className="download-list">{filtered.map((i) => renderDownloadItem(i))}</ul>
+        )}
+      </div>
     </section>
   );
 }

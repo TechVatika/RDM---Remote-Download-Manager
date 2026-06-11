@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import LoginPage from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import './index.css';
+import './styles/dell-1996.css';
 
 function AppShell() {
   const { user, loading } = useAuth();
@@ -30,10 +31,14 @@ function AppShell() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppShell />
-      </AuthProvider>
-    </ThemeProvider>
+    <div className="dell-page-frame">
+      <div className="dell-canvas">
+        <ThemeProvider>
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
+        </ThemeProvider>
+      </div>
+    </div>
   );
 }

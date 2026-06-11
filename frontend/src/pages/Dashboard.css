@@ -1213,6 +1213,18 @@
 }
 .download-error { color: var(--danger); }
 
+.download-info {
+  margin: 0.3rem 0;
+  font-size: 0.9rem;
+  color: var(--accent, #3b82f6);
+  word-break: break-word;
+}
+
+.stat-muted {
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
 .progress-bar {
   height: 9px;
   background: var(--track);

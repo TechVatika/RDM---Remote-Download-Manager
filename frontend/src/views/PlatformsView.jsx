@@ -1,5 +1,6 @@
 import { FeaturedPlatforms } from '../components/PlatformTile.jsx';
 import PlatformCategorySection from '../components/PlatformCategorySection.jsx';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
 import { FEATURED_PLATFORMS } from '../utils/platformIcons.js';
 
 export default function PlatformsView({
@@ -15,6 +16,8 @@ export default function PlatformsView({
 }) {
   return (
     <section className="panel platforms-panel">
+      <SectionEyebrow title="SUPPORTED PLATFORMS" tint="sky" />
+      <div className="panel-body">
       <div className="platforms-hero">
         <p className="platform-intro">
           RDM uses <strong>yt-dlp</strong> ({platformData?.extractorCount || '1800+'} sites) and an
@@ -76,6 +79,7 @@ export default function PlatformsView({
           </p>
         </div>
       )}
+      </div>
     </section>
   );
 }

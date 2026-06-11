@@ -11,7 +11,8 @@ module.exports = {
         PATH: '/home/h33t/.local/bin:/usr/local/bin:/usr/bin:/bin',
       },
       autorestart: true,
-      max_restarts: 10,
+      max_restarts: 20,
+      min_uptime: 10000,
       restart_delay: 3000,
     },
     {
@@ -24,7 +25,8 @@ module.exports = {
         PATH: '/home/h33t/.local/bin:/usr/local/bin:/usr/bin:/bin',
       },
       autorestart: true,
-      max_restarts: 10,
+      max_restarts: 20,
+      min_uptime: 10000,
       restart_delay: 3000,
     },
     {

@@ -182,4 +182,59 @@ export function prepareDownloadUrl(raw) {
   return normalizeMediaUrl(url);
 }
 
+export function extractYoutubeListId(raw) {
+  try {
+    const u = new URL(String(raw ?? '').trim());
+    const host = u.hostname.toLowerCase();
+    if (!host.includes('youtube.com') && !host.includes('music.youtube.com')) return null;
+    return u.searchParams.get('list');
+  } catch {
+    return null;
+  }
+}
+
+/** Classify YouTube list= IDs — user playlists, Mix/Radio, Watch Later, etc. */
+export function classifyYoutubePlaylistKind(listId) {
+  if (!listId) return null;
+  const upper = listId.toUpperCase();
+  if (upper.startsWith('PL')) {
+    return { kind: 'user', label: 'Playlist', requiresAuth: false };
+  }
+  if (upper.startsWith('RD')) {
+    return { kind: 'mix', label: 'Mix', requiresAuth: false };
+  }
+  if (upper.startsWith('WL')) {
+    return { kind: 'watch_later', label: 'Watch Later', requiresAuth: true };
+  }
+  if (upper.startsWith('LL')) {
+    return { kind: 'liked', label: 'Liked videos', requiresAuth: true };
+  }
+  if (upper.startsWith('LM') || listId.startsWith('OLAK5uy_')) {
+    return { kind: 'music', label: 'Music album', requiresAuth: false };
+  }
+  if (upper.startsWith('FL')) {
+    return { kind: 'favorites', label: 'Favorites', requiresAuth: true };
+  }
+  return { kind: 'system', label: 'Playlist', requiresAuth: false };
+}
+
+/** URLs that yt-dlp may treat as multi-entry playlists. */
+export function looksLikePlaylistUrl(raw) {
+  try {
+    const u = new URL(String(raw ?? '').trim());
+    const host = u.hostname.toLowerCase();
+    if (host.includes('youtube.com') || host.includes('music.youtube.com')) {
+      if (/\/playlist\b/i.test(u.pathname)) return true;
+      const list = u.searchParams.get('list');
+      // PL=user, RD=Mix, WL=Watch Later, LL=Liked, LM/OLAK=music albums, etc.
+      if (list && list.length >= 2) return true;
+    }
+    if (host.includes('soundcloud.com') && /\/sets\//i.test(u.pathname)) return true;
+    if (host.includes('dailymotion.com') && /\/playlist\//i.test(u.pathname)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export { FILE_EXT_SUFFIX, sanitizeViewkeyValue };

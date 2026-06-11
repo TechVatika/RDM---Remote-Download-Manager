@@ -7,6 +7,7 @@ dist
 downloads/
 .claude/
 backend/data/
+backend/src/data/staging-cleanup.json
 backend/logs/
 frontend/dist/
 

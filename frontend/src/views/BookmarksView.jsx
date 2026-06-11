@@ -4,8 +4,10 @@ import PlatformIcon from '../components/PlatformIcon.jsx';
 import { detectPlatformFromUrl } from '../utils/platformIcons.js';
 import { loadBookmarks, removeBookmark } from '../utils/bookmarks.js';
 import { toastSuccess } from '../utils/swal.js';
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
-export default function BookmarksView({ onQueueBookmark, onNavigate }) {
+export default function BookmarksView({ onQueueBookmark, onQueueAllBookmarks, onNavigate, queueingAll }) {
   const [bookmarks, setBookmarks] = useState(() => loadBookmarks());
 
   const remove = (id) => {
@@ -15,21 +17,41 @@ export default function BookmarksView({ onQueueBookmark, onNavigate }) {
 
   return (
     <section className="panel">
-      <div className="panel-head">
-        <h2>Saved Bookmarks</h2>
-        <button type="button" className="btn-secondary" onClick={() => onNavigate('new')}>
-          Add from New Download
-        </button>
-      </div>
+      <SectionEyebrow
+        title="SAVED BOOKMARKS"
+        tint="peach"
+        action={(
+          <div className="bookmark-header-actions">
+            {bookmarks.length > 1 && (
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                disabled={queueingAll}
+                onClick={() => onQueueAllBookmarks(bookmarks)}
+              >
+                {queueingAll ? 'Queueing…' : `Queue all (${bookmarks.length})`}
+              </button>
+            )}
+            <button type="button" className="btn-secondary" onClick={() => onNavigate('new')}>
+              Add from New Download
+            </button>
+          </div>
+        )}
+      />
+      <div className="panel-body">
       <p className="settings-desc">
         Save URLs from the New Download page for one-click re-queuing. Stored locally in your browser.
+        Use <strong>Queue all</strong> to batch-download your saved list like a personal playlist.
       </p>
 
       {bookmarks.length === 0 ? (
-        <div className="empty-inline">
-          <HiBookmark size={32} />
-          <p>No bookmarks yet. Paste a URL on New Download and click &quot;Save bookmark&quot;.</p>
-        </div>
+        <EmptyState
+          icon={HiBookmark}
+          title="No bookmarks yet"
+          description='Paste a URL on New Download and click "Save bookmark".'
+          actionLabel="New download"
+          onAction={() => onNavigate('new')}
+        />
       ) : (
         <ul className="bookmark-list">
           {bookmarks.map((b) => (
@@ -56,6 +78,7 @@ export default function BookmarksView({ onQueueBookmark, onNavigate }) {
           ))}
         </ul>
       )}
+      </div>
     </section>
   );
 }

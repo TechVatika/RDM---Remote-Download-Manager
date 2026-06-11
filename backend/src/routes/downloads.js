@@ -2,14 +2,26 @@ import { Router } from 'express';
 import path from 'path';
 import { pool } from '../db/pool.js';
 import { cancelDownload, pauseDownload, setJobCredentials } from '../worker/downloadWorker.js';
-import { probeMedia } from '../worker/ytdlpDownload.js';
-import { cleanupSegmentedJob } from '../worker/segmentedDownload.js';
+import { listPlaylistEntries, probeMedia } from '../worker/ytdlpDownload.js';
+import {
+  cleanupSegmentedJob,
+  hasPartialJob,
+  readPartialProgress,
+} from '../worker/segmentedDownload.js';
 import { resolveDestination } from '../config/paths.js';
-import { filenameFromUrl } from '../utils/filename.js';
-import { prepareDownloadUrl } from '../utils/mediaUrl.js';
+import { filenameFromUrl, sanitizeFilename } from '../utils/filename.js';
+import { inspectRemoteHttpUrl } from '../utils/httpInspect.js';
+import { assertDownloadUrlAllowed } from '../utils/ssrf.js';
+import { looksLikePlaylistUrl, prepareDownloadUrl } from '../utils/mediaUrl.js';
 import { isAdultSiteUrl } from '../data/adultSites.js';
 import { resolveQueuedFilename, defaultHttpFilename } from '../utils/queueMetadata.js';
-import { getAiRenameConfig, isAiRenameEnabled, suggestFilename } from '../utils/aiRename.js';
+import {
+  getAiRenameConfig,
+  isAiRenameEnabled,
+  localSmartFilename,
+  suggestFilename,
+} from '../utils/aiRename.js';
+import { getCachedProbe, setCachedProbe } from '../utils/probeCache.js';
 import { clampConnections, DEFAULT_CONNECTIONS } from '../config/speed.js';
 import { resolveDownloadType, analyzeUrl } from '../utils/platformDetect.js';
 
@@ -21,7 +33,134 @@ function sanitizeDownloadRow(row) {
   return { ...row, title: null, thumbnail: null };
 }
 
+function enrichDownloadRow(row) {
+  const base = sanitizeDownloadRow(row);
+  if (!base || base.type === 'media') return { ...base, can_resume: false };
+  const destDir = resolveDestination(base.category);
+  const canResume = hasPartialJob(destDir, base.id);
+  const partial = canResume ? readPartialProgress(destDir, base.id) : null;
+  return {
+    ...base,
+    can_resume: canResume,
+    ...(partial && ['failed', 'cancelled', 'paused'].includes(base.status)
+      ? {
+          bytes_downloaded: partial.bytesDownloaded,
+          file_size: partial.fileSize ?? base.file_size,
+          progress: partial.progress,
+        }
+      : {}),
+  };
+}
+
 const LIST_WHERE = `private = 0 OR status IN ('queued', 'downloading', 'paused')`;
+const BULK_MAX_EXPANDED = Number(process.env.BULK_MAX_EXPANDED) || 200;
+
+function normalizeMediaFormat(format_id, media_kind) {
+  const kind = media_kind === 'audio' ? 'audio' : 'video';
+  const formatId = kind === 'audio' ? null : format_id || 'best';
+  return { formatId, kind };
+}
+
+async function expandUrlsForQueue(rawUrls, expandPlaylists) {
+  const expanded = [];
+  for (const raw of rawUrls) {
+    if (typeof raw !== 'string' || !raw.trim()) continue;
+    let trimmed;
+    try {
+      trimmed = prepareDownloadUrl(raw.trim());
+      await assertDownloadUrlAllowed(trimmed);
+    } catch {
+      continue;
+    }
+
+    const dlType = resolveDownloadType(trimmed, 'http');
+    if (expandPlaylists && dlType === 'media' && looksLikePlaylistUrl(trimmed)) {
+      const playlist = await listPlaylistEntries(trimmed);
+      if (playlist?.entries?.length) {
+        for (const entry of playlist.entries) {
+          expanded.push({
+            url: entry.url,
+            sourceUrl: trimmed,
+            playlistTitle: playlist.playlistTitle,
+          });
+        }
+        continue;
+      }
+    }
+
+    expanded.push({ url: trimmed, sourceUrl: null, playlistTitle: null });
+  }
+  return expanded;
+}
+
+async function queueDownloadRow({
+  trimmed,
+  category,
+  dlType,
+  format_id = null,
+  media_kind = null,
+  connections = null,
+  filename = null,
+  title = null,
+  thumbnail = null,
+  ai_rename = 0,
+}) {
+  const isMedia = dlType === 'media';
+  const isPrivate = isAdultSiteUrl(trimmed);
+  const { formatId, kind } = isMedia ? normalizeMediaFormat(format_id, media_kind) : { formatId: null, kind: null };
+
+  const [result] = await pool.query(
+    `INSERT INTO downloads (url, category, status, type, format_id, media_kind, title, thumbnail, connections, filename, ai_rename, private)
+     VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      trimmed,
+      category,
+      dlType,
+      formatId,
+      kind,
+      title,
+      thumbnail,
+      isMedia ? null : connections,
+      filename,
+      isPrivate ? 0 : ai_rename,
+      isPrivate ? 1 : 0,
+    ],
+  );
+  const [rows] = await pool.query('SELECT * FROM downloads WHERE id = ?', [result.insertId]);
+  return sanitizeDownloadRow(rows[0]);
+}
+
+async function resolveFilenameForQueue(trimmed, dlType, { useAiRename = 0 } = {}) {
+  const isMedia = dlType === 'media';
+  const isPrivate = isAdultSiteUrl(trimmed);
+
+  if (isPrivate) {
+    return {
+      filename: await resolveQueuedFilename(trimmed, { type: dlType, isPrivate: true }),
+      aiRename: 0,
+      isPrivate: true,
+    };
+  }
+
+  if (!isMedia) {
+    try {
+      const info = await inspectRemoteHttpUrl(trimmed);
+      return {
+        filename: sanitizeFilename(info.filename || defaultHttpFilename(trimmed)),
+        aiRename: 0,
+        isPrivate: false,
+      };
+    } catch {
+      return {
+        filename: defaultHttpFilename(trimmed),
+        aiRename: 0,
+        isPrivate: false,
+      };
+    }
+  }
+
+  return { filename: null, aiRename: useAiRename ? 1 : 0, isPrivate: false };
+}
 
 // Inspect a media URL and return its available qualities/formats.
 router.post('/probe', async (req, res, next) => {
@@ -31,7 +170,12 @@ router.post('/probe', async (req, res, next) => {
   }
   try {
     const trimmed = prepareDownloadUrl(url.trim());
+    const cached = getCachedProbe(trimmed);
+    if (cached) {
+      return res.json({ ...cached, cached: true });
+    }
     const info = await probeMedia(trimmed);
+    setCachedProbe(trimmed, info);
     res.json(info);
   } catch (err) {
     res.status(err.message?.includes('blob:') || err.message?.includes('Invalid URL') ? 400 : 422).json({
@@ -40,8 +184,176 @@ router.post('/probe', async (req, res, next) => {
   }
 });
 
+// Fast filename from the remote server (Content-Disposition / URL path) — no AI.
+router.post('/resolve-filename', async (req, res, next) => {
+  const { url } = req.body;
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return res.status(400).json({ error: 'url is required' });
+  }
+
+  try {
+    const trimmed = prepareDownloadUrl(url.trim());
+    const dlType = resolveDownloadType(trimmed, 'http');
+
+    if (dlType === 'media') {
+      return res.json({
+        type: 'media',
+        filename: null,
+        fileSize: null,
+        source: 'media',
+      });
+    }
+
+    const info = await inspectRemoteHttpUrl(trimmed);
+    res.json({
+      type: 'http',
+      filename: info.filename,
+      fileSize: info.totalBytes,
+      supportsRanges: info.supportsRanges,
+      source: info.source,
+    });
+  } catch (err) {
+    try {
+      const trimmed = prepareDownloadUrl(url.trim());
+      res.json({
+        type: 'http',
+        filename: defaultHttpFilename(trimmed),
+        fileSize: null,
+        source: 'url',
+        fallback: true,
+        error: err.message,
+      });
+    } catch (inner) {
+      const code = /Invalid URL|required/i.test(inner.message || '') ? 400 : 422;
+      res.status(code).json({ error: inner.message || 'Could not resolve filename' });
+    }
+  }
+});
+
+async function previewOneUrl(raw, { expandPlaylists = false } = {}) {
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return { url: raw, valid: false, error: 'Empty line' };
+  }
+  try {
+    const trimmed = prepareDownloadUrl(raw.trim());
+    await assertDownloadUrlAllowed(trimmed);
+    const dlType = resolveDownloadType(trimmed, 'http');
+    const isMedia = dlType === 'media';
+    const isPrivate = isAdultSiteUrl(trimmed);
+    const auto = analyzeUrl(trimmed);
+    const isPlaylist = isMedia && looksLikePlaylistUrl(trimmed);
+
+    let filename = null;
+    let fileSize = null;
+    let source = null;
+    let playlist = null;
+
+    if (!isMedia) {
+      try {
+        const info = await inspectRemoteHttpUrl(trimmed);
+        filename = info.filename;
+        fileSize = info.totalBytes;
+        source = info.source;
+      } catch {
+        filename = defaultHttpFilename(trimmed);
+        source = 'url';
+      }
+    } else if (isPrivate) {
+      filename = await resolveQueuedFilename(trimmed, { type: 'media', isPrivate: true });
+      source = 'probe';
+    } else {
+      const cached = getCachedProbe(trimmed);
+      if (cached?.title) {
+        filename = localSmartFilename({
+          title: cached.title,
+          originalName: defaultHttpFilename(trimmed),
+          url: trimmed,
+          category: 'general',
+        });
+        source = 'probe-cache';
+      }
+    }
+
+    if (isPlaylist) {
+      if (expandPlaylists) {
+        playlist = await listPlaylistEntries(trimmed);
+      } else {
+        playlist = { entryCount: null, playlistTitle: null, pending: true };
+      }
+    }
+
+    return {
+      url: trimmed,
+      valid: true,
+      type: dlType,
+      platform: auto?.platform || null,
+      filename,
+      fileSize,
+      source,
+      private: isPrivate,
+      isPlaylist,
+      playlist,
+      expandsTo: playlist?.entryCount || 1,
+    };
+  } catch (err) {
+    return { url: raw.trim(), valid: false, error: err.message || 'Invalid URL' };
+  }
+}
+
+async function mapConcurrent(items, limit, fn) {
+  const results = new Array(items.length);
+  let index = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const i = index++;
+      results[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+router.post('/bulk/preview', async (req, res, next) => {
+  const { urls, expand_playlists = false } = req.body;
+  if (!Array.isArray(urls) || !urls.length) {
+    return res.status(400).json({ error: 'urls must be a non-empty array' });
+  }
+  if (urls.length > 50) {
+    return res.status(400).json({ error: 'Maximum 50 URLs per batch' });
+  }
+
+  try {
+    const concurrency = Number(process.env.BULK_PREVIEW_CONCURRENCY) || 6;
+    const expandPlaylists = expand_playlists === true || expand_playlists === 1;
+    const items = await mapConcurrent(urls, concurrency, (raw) =>
+      previewOneUrl(raw, { expandPlaylists }),
+    );
+
+    const valid = items.filter((i) => i.valid);
+    const expandedCount = valid.reduce((sum, i) => sum + (i.expandsTo || 1), 0);
+    res.json({
+      count: items.length,
+      validCount: valid.length,
+      mediaCount: valid.filter((i) => i.type === 'media').length,
+      httpCount: valid.filter((i) => i.type === 'http').length,
+      playlistCount: valid.filter((i) => i.isPlaylist).length,
+      expandedCount,
+      expandPlaylists,
+      items,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/suggest-name', async (req, res, next) => {
-  const { url, category = 'general', title = null, type = 'http' } = req.body;
+  const {
+    url,
+    category = 'general',
+    title = null,
+    type = 'http',
+    use_ai = false,
+  } = req.body;
   if (!url || typeof url !== 'string' || !url.trim()) {
     return res.status(400).json({ error: 'url is required' });
   }
@@ -51,7 +363,7 @@ router.post('/suggest-name', async (req, res, next) => {
 
     // 18+ sites: never send URL/title to the AI provider — keep a plain local name.
     if (isAdultSiteUrl(normalized)) {
-      return res.json({ filename: filenameFromUrl(normalized), aiUsed: false });
+      return res.json({ filename: filenameFromUrl(normalized), aiUsed: false, source: 'local' });
     }
 
     let mediaTitle = title;
@@ -59,25 +371,44 @@ router.post('/suggest-name', async (req, res, next) => {
     let extractor = null;
 
     if (type === 'media' && !mediaTitle) {
-      const info = await probeMedia(normalized);
-      mediaTitle = info.title;
-      uploader = info.uploader;
-      extractor = info.extractor;
+      const cached = getCachedProbe(normalized);
+      if (cached) {
+        mediaTitle = cached.title;
+        uploader = cached.uploader;
+        extractor = cached.extractor;
+      } else {
+        const info = await probeMedia(normalized);
+        setCachedProbe(normalized, info);
+        mediaTitle = info.title;
+        uploader = info.uploader;
+        extractor = info.extractor;
+      }
     }
 
     const originalName = filenameFromUrl(normalized);
-    const filename = await suggestFilename({
+    const ctx = {
       url: normalized,
       title: mediaTitle,
       category,
       originalName,
       uploader,
       extractor,
-    });
+    };
+
+    const wantAi = use_ai === true || use_ai === 1;
+    const local = localSmartFilename(ctx);
+
+    if (!wantAi) {
+      return res.json({ filename: local, aiUsed: false, source: 'local' });
+    }
+
+    const filename = await suggestFilename(ctx, { useAi: true });
+    const aiUsed = wantAi && isAiRenameEnabled() && filename !== local;
 
     res.json({
       filename,
-      aiUsed: isAiRenameEnabled(),
+      aiUsed,
+      source: aiUsed ? 'ai' : 'local',
     });
   } catch (err) {
     const code = /blob:|Invalid URL|required/i.test(err.message || '') ? 400 : 422;
@@ -96,7 +427,7 @@ router.get('/', async (_req, res, next) => {
        ORDER BY created_at DESC
        LIMIT 100`,
     );
-    res.json(rows.map(sanitizeDownloadRow));
+    res.json(rows.map(enrichDownloadRow));
   } catch (err) {
     next(err);
   }
@@ -108,14 +439,22 @@ router.get('/:id', async (req, res, next) => {
       req.params.id,
     ]);
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
-    res.json(sanitizeDownloadRow(rows[0]));
+    res.json(enrichDownloadRow(rows[0]));
   } catch (err) {
     next(err);
   }
 });
 
 router.post('/bulk', async (req, res, next) => {
-  const { urls, category = 'general', connections = 8, ai_rename = true } = req.body;
+  const {
+    urls,
+    category = 'general',
+    connections = null,
+    ai_rename = false,
+    format_id = 'best',
+    media_kind = 'video',
+    expand_playlists = false,
+  } = req.body;
   if (!Array.isArray(urls) || urls.length === 0) {
     return res.status(400).json({ error: 'urls must be a non-empty array' });
   }
@@ -123,55 +462,41 @@ router.post('/bulk', async (req, res, next) => {
     return res.status(400).json({ error: 'Maximum 50 URLs per batch' });
   }
 
-  const conn = clampConnections(connections);
-  const useAiRename = ai_rename !== false && ai_rename !== 0 ? 1 : 0;
+  const conn = clampConnections(connections ?? DEFAULT_CONNECTIONS);
+  const useAiRename = ai_rename === true || ai_rename === 1 ? 1 : 0;
+  const expandPlaylists = expand_playlists === true || expand_playlists === 1;
   const queued = [];
 
   try {
-    for (const raw of urls) {
-      if (typeof raw !== 'string') continue;
-      let trimmed;
-      try {
-        trimmed = prepareDownloadUrl(raw.trim());
-      } catch {
-        continue;
-      }
-
-      const dlType = resolveDownloadType(trimmed, 'http');
-      const isMedia = dlType === 'media';
-      const isPrivate = isAdultSiteUrl(trimmed);
-      const queuedFilename = isPrivate
-        ? await resolveQueuedFilename(trimmed, { type: dlType, isPrivate: true })
-        : !isMedia
-          ? defaultHttpFilename(trimmed)
-          : null;
-
-      const [result] = await pool.query(
-        `INSERT INTO downloads (url, category, status, type, format_id, media_kind, connections, filename, ai_rename, private)
-         VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          trimmed,
-          category,
-          dlType,
-          isMedia ? 'best' : null,
-          isMedia ? 'video' : null,
-          isMedia ? null : conn,
-          isMedia && !isPrivate ? null : queuedFilename,
-          isPrivate ? 0 : useAiRename,
-          isPrivate ? 1 : 0,
-        ],
-      );
-      const [rows] = await pool.query('SELECT * FROM downloads WHERE id = ?', [
-        result.insertId,
-      ]);
-      queued.push(sanitizeDownloadRow(rows[0]));
-    }
-
-    if (!queued.length) {
+    const expanded = await expandUrlsForQueue(urls, expandPlaylists);
+    if (!expanded.length) {
       return res.status(400).json({ error: 'No valid URLs in batch' });
     }
+    if (expanded.length > BULK_MAX_EXPANDED) {
+      return res.status(400).json({
+        error: `Batch would queue ${expanded.length} downloads (max ${BULK_MAX_EXPANDED}). Disable playlist expansion or split the batch.`,
+      });
+    }
 
-    res.status(201).json({ count: queued.length, items: queued });
+    for (const item of expanded) {
+      const trimmed = item.url;
+      const dlType = resolveDownloadType(trimmed, 'http');
+      const meta = await resolveFilenameForQueue(trimmed, dlType, { useAiRename });
+
+      const row = await queueDownloadRow({
+        trimmed,
+        category,
+        dlType,
+        format_id,
+        media_kind,
+        connections: conn,
+        filename: meta.filename,
+        ai_rename: meta.aiRename,
+      });
+      queued.push(row);
+    }
+
+    res.status(201).json({ count: queued.length, items: queued, expanded: expandPlaylists });
   } catch (err) {
     next(err);
   }
@@ -261,7 +586,8 @@ router.post('/', async (req, res, next) => {
     thumbnail = null,
     connections = null,
     filename = null,
-    ai_rename = true,
+    ai_rename = false,
+    expand_playlist = false,
   } = req.body;
 
   if (!url || typeof url !== 'string') {
@@ -301,15 +627,20 @@ router.post('/', async (req, res, next) => {
   }
 
   let conn = null;
-  if (!isMedia && connections != null) {
-    conn = clampConnections(connections);
+  if (!isMedia) {
+    conn = clampConnections(connections ?? DEFAULT_CONNECTIONS);
   }
 
   let cleanName = null;
   if (!isMedia && filename != null && typeof filename === 'string' && filename.trim()) {
     cleanName = filename.trim().slice(0, 255);
   } else if (!isMedia) {
-    cleanName = defaultHttpFilename(trimmed);
+    try {
+      const info = await inspectRemoteHttpUrl(trimmed);
+      cleanName = sanitizeFilename(info.filename || defaultHttpFilename(trimmed));
+    } catch {
+      cleanName = defaultHttpFilename(trimmed);
+    }
   }
 
   // 18+ sites: private mode — never AI-named, hidden from history, purged on finish.
@@ -323,7 +654,7 @@ router.post('/', async (req, res, next) => {
     ? 0
     : cleanName
       ? 0
-      : ai_rename !== false && ai_rename !== 0
+      : ai_rename === true || ai_rename === 1
         ? 1
         : 0;
 
@@ -332,33 +663,58 @@ router.post('/', async (req, res, next) => {
   const effTitle = isMedia && !isPrivate ? title : null;
   const effThumbnail = isMedia && !isPrivate ? thumbnail : null;
   const effFilename = !isMedia || isPrivate ? cleanName : null;
+  const expandPlaylist = (expand_playlist === true || expand_playlist === 1) && isMedia && !isPrivate;
 
   try {
-    const [result] = await pool.query(
-      `INSERT INTO downloads (url, category, status, type, format_id, media_kind, title, thumbnail, connections, filename, ai_rename, private)
-       VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        trimmed,
-        category,
-        effectiveType,
-        effFormatId,
-        effMediaKind,
-        effTitle,
-        effThumbnail,
-        isMedia ? null : conn,
-        effFilename,
-        useAiRename,
-        isPrivate ? 1 : 0,
-      ],
-    );
+    if (expandPlaylist) {
+      const playlist = await listPlaylistEntries(trimmed);
+      if (playlist?.entries?.length) {
+        if (playlist.entries.length > BULK_MAX_EXPANDED) {
+          return res.status(400).json({
+            error: `Playlist has ${playlist.entries.length} videos (max ${BULK_MAX_EXPANDED}). Queue individual videos instead.`,
+          });
+        }
 
-    const [rows] = await pool.query(
-      'SELECT * FROM downloads WHERE id = ?',
-      [result.insertId],
-    );
+        const queued = [];
+        for (const entry of playlist.entries) {
+          const row = await queueDownloadRow({
+            trimmed: entry.url,
+            category,
+            dlType: 'media',
+            format_id: effFormatId,
+            media_kind: effMediaKind,
+            title: entry.title,
+            thumbnail: effThumbnail,
+            ai_rename: useAiRename,
+          });
+          queued.push(row);
+        }
+
+        return res.status(201).json({
+          count: queued.length,
+          items: queued,
+          playlist: true,
+          playlistTitle: playlist.playlistTitle,
+          autoDetected: analyzeUrl(trimmed),
+        });
+      }
+    }
+
+    const row = await queueDownloadRow({
+      trimmed,
+      category,
+      dlType: effectiveType,
+      format_id: effFormatId,
+      media_kind: effMediaKind,
+      connections: conn,
+      filename: effFilename,
+      title: effTitle,
+      thumbnail: effThumbnail,
+      ai_rename: useAiRename,
+    });
 
     res.status(201).json({
-      ...sanitizeDownloadRow(rows[0]),
+      ...row,
       autoDetected: analyzeUrl(trimmed),
     });
   } catch (err) {
@@ -436,20 +792,32 @@ router.post('/:id/resume', async (req, res, next) => {
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
 
     const job = rows[0];
-    if (job.status !== 'paused') {
-      return res.status(400).json({ error: 'Only paused downloads can be resumed' });
+    const destDir = resolveDestination(job.category);
+    const partial =
+      job.type !== 'media' ? readPartialProgress(destDir, job.id) : null;
+    const canResume =
+      job.status === 'paused' ||
+      (['failed', 'cancelled'].includes(job.status) && Boolean(partial));
+
+    if (!canResume) {
+      return res.status(400).json({
+        error: 'Only paused downloads or failed/cancelled jobs with saved progress can be resumed',
+      });
     }
 
-    // Re-queue WITHOUT resetting progress — the worker resumes from the manifest.
-    await pool.query(
-      `UPDATE downloads SET status = 'queued', error_message = NULL, updated_at = NOW() WHERE id = ?`,
-      [job.id],
-    );
+    const fields = ['status = \'queued\'', 'error_message = NULL', 'updated_at = NOW()'];
+    const params = [];
+    if (partial) {
+      fields.push('bytes_downloaded = ?', 'file_size = COALESCE(?, file_size)', 'progress = ?');
+      params.push(partial.bytesDownloaded, partial.fileSize, partial.progress.toFixed(2));
+    }
+    params.push(job.id);
+    await pool.query(`UPDATE downloads SET ${fields.join(', ')} WHERE id = ?`, params);
 
     const [updated] = await pool.query('SELECT * FROM downloads WHERE id = ?', [
       job.id,
     ]);
-    res.json(updated[0]);
+    res.json(enrichDownloadRow(updated[0]));
   } catch (err) {
     next(err);
   }
@@ -467,8 +835,14 @@ router.post('/:id/retry', async (req, res, next) => {
       return res.status(400).json({ error: 'Only failed or cancelled downloads can be retried' });
     }
 
-    if (job.type !== 'media') {
-      cleanupSegmentedJob(resolveDestination(job.category), job.id);
+    const destDir = resolveDestination(job.category);
+    const fresh = req.query.fresh === '1' || req.body?.fresh === true;
+    const partial =
+      !fresh && job.type !== 'media' ? readPartialProgress(destDir, job.id) : null;
+    const resumePartial = Boolean(partial);
+
+    if ((!resumePartial || fresh) && job.type !== 'media') {
+      cleanupSegmentedJob(destDir, job.id);
     }
 
     let normalizedUrl;
@@ -480,20 +854,48 @@ router.post('/:id/retry', async (req, res, next) => {
 
     const isPrivate = isAdultSiteUrl(normalizedUrl);
 
-    await pool.query(
-      `UPDATE downloads
-       SET status = 'queued', progress = 0, bytes_downloaded = 0,
-           file_path = NULL, file_size = NULL, error_message = NULL,
-           needs_auth = 0, completed_at = NULL, url = ?, private = ?,
-           ai_rename = IF(? = 1, 0, ai_rename), updated_at = NOW()
-       WHERE id = ?`,
-      [normalizedUrl, isPrivate ? 1 : 0, isPrivate ? 1 : 0, req.params.id],
-    );
+    if (resumePartial && !fresh) {
+      await pool.query(
+        `UPDATE downloads
+         SET status = 'queued',
+             bytes_downloaded = ?,
+             file_size = COALESCE(?, file_size),
+             progress = ?,
+             file_path = NULL,
+             error_message = NULL,
+             needs_auth = 0,
+             completed_at = NULL,
+             url = ?,
+             private = ?,
+             ai_rename = IF(? = 1, 0, ai_rename),
+             updated_at = NOW()
+         WHERE id = ?`,
+        [
+          partial.bytesDownloaded,
+          partial.fileSize,
+          partial.progress.toFixed(2),
+          normalizedUrl,
+          isPrivate ? 1 : 0,
+          isPrivate ? 1 : 0,
+          req.params.id,
+        ],
+      );
+    } else {
+      await pool.query(
+        `UPDATE downloads
+         SET status = 'queued', progress = 0, bytes_downloaded = 0,
+             file_path = NULL, file_size = NULL, error_message = NULL,
+             needs_auth = 0, completed_at = NULL, url = ?, private = ?,
+             ai_rename = IF(? = 1, 0, ai_rename), updated_at = NOW()
+         WHERE id = ?`,
+        [normalizedUrl, isPrivate ? 1 : 0, isPrivate ? 1 : 0, req.params.id],
+      );
+    }
 
     const [updated] = await pool.query('SELECT * FROM downloads WHERE id = ?', [
       req.params.id,
     ]);
-    res.json(updated[0]);
+    res.json(enrichDownloadRow(updated[0]));
   } catch (err) {
     next(err);
   }

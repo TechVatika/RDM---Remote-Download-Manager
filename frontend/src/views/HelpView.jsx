@@ -1,9 +1,19 @@
+import SectionEyebrow from '../components/SectionEyebrow.jsx';
+import AsyncPanel from '../components/AsyncPanel.jsx';
+
 export default function HelpView({ appSettings, onNavigate }) {
-  if (!appSettings?.howItWorks) {
+  if (!appSettings) {
+    return <AsyncPanel title="HELP & GUIDE" tint="lime" loading />;
+  }
+
+  if (!appSettings.howItWorks) {
     return (
-      <section className="panel settings-panel">
-        <p className="settings-desc">Loading guide…</p>
-      </section>
+      <AsyncPanel
+        title="HELP & GUIDE"
+        tint="lime"
+        loading={false}
+        error="Guide content is not available on this server."
+      />
     );
   }
 
@@ -11,7 +21,8 @@ export default function HelpView({ appSettings, onNavigate }) {
 
   return (
     <section className="panel settings-panel">
-      <h2>{howItWorks.title}</h2>
+      <SectionEyebrow title={howItWorks.title?.toUpperCase() || 'HELP & GUIDE'} tint="lime" />
+      <div className="panel-body">
       <p className="settings-desc">
         RDM is a personal remote download manager. Queue links from any device; files save to your home server.
       </p>
@@ -57,6 +68,7 @@ export default function HelpView({ appSettings, onNavigate }) {
         <button type="button" className="quick-link-card accent-orange" onClick={() => onNavigate('system')}>
           <span>System Health</span>
         </button>
+      </div>
       </div>
     </section>
   );
