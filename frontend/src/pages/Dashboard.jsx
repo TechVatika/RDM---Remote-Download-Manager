@@ -75,7 +75,8 @@ export default function Dashboard() {
   const [bulkFormatId, setBulkFormatId] = useState('best');
   const [bulkMediaKind, setBulkMediaKind] = useState('video');
   const [bulkExpandPlaylists, setBulkExpandPlaylists] = useState(true);
-  const [expandPlaylist, setExpandPlaylist] = useState(true);
+  const [expandPlaylist, setExpandPlaylist] = useState(false);
+  const [playlistLoading, setPlaylistLoading] = useState(false);
   const [queueingAllBookmarks, setQueueingAllBookmarks] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [systemInfo, setSystemInfo] = useState(null);
@@ -286,6 +287,7 @@ export default function Dashboard() {
     filenameTouched.current = false;
     setFilename('');
     setProbeInfo(null);
+    setExpandPlaylist(false);
   }, [url]);
 
   const resolveFilenameFromServer = useCallback(
@@ -415,6 +417,37 @@ export default function Dashboard() {
     [url],
   );
 
+  const loadPlaylistCount = useCallback(async () => {
+    const trimmed = url.trim();
+    if (!trimmed || !probeInfo?.playlist?.pending) return;
+
+    setPlaylistLoading(true);
+    try {
+      const res = await apiFetch('/api/downloads/playlist', {
+        method: 'POST',
+        body: JSON.stringify({ url: trimmed }),
+      });
+      const playlist = await res.json();
+      if (!res.ok) throw new Error(playlist.error || 'Could not load playlist');
+      setProbeInfo((prev) => (prev ? { ...prev, playlist } : prev));
+    } catch (err) {
+      toastError(err.message);
+    } finally {
+      setPlaylistLoading(false);
+    }
+  }, [url, probeInfo?.playlist?.pending]);
+
+  useEffect(() => {
+    if (!expandPlaylist || !probeInfo?.playlist?.pending) return;
+    loadPlaylistCount();
+  }, [expandPlaylist, probeInfo?.playlist?.pending, loadPlaylistCount]);
+
+  const shouldExpandPlaylist = (playlist) => {
+    if (!expandPlaylist || !playlist) return false;
+    if (playlist.entryCount > 1) return true;
+    return Boolean(playlist.pending);
+  };
+
   useEffect(() => {
     if (bulkMode || view !== 'new') return;
 
@@ -509,7 +542,6 @@ export default function Dashboard() {
       const trimmedUrl = url.trim();
       const useMedia = isMediaSiteUrl(trimmedUrl);
 
-      const playlistVideos = probeInfo?.playlist?.entryCount;
       const res = await apiFetch('/api/downloads', {
         method: 'POST',
         body: JSON.stringify({
@@ -521,7 +553,7 @@ export default function Dashboard() {
           connections: useMedia ? undefined : Number(connections) || 4,
           filename: useMedia ? null : filename.trim() || null,
           ai_rename: aiRename && !filename.trim(),
-          expand_playlist: useMedia && expandPlaylist && playlistVideos > 1,
+          expand_playlist: useMedia && shouldExpandPlaylist(probeInfo?.playlist),
           title: useMedia ? probeInfo?.title || null : undefined,
           thumbnail: useMedia ? probeInfo?.thumbnail || null : undefined,
         }),
@@ -583,7 +615,6 @@ export default function Dashboard() {
   const queueMedia = async (formatId, mediaKind) => {
     setError('');
     requestNotifyPermission();
-    const playlistVideos = probeInfo?.playlist?.entryCount;
     try {
       const res = await apiFetch('/api/downloads', {
         method: 'POST',
@@ -596,7 +627,7 @@ export default function Dashboard() {
           title: probeInfo?.title || null,
           thumbnail: probeInfo?.thumbnail || null,
           ai_rename: aiRename,
-          expand_playlist: expandPlaylist && playlistVideos > 1,
+          expand_playlist: shouldExpandPlaylist(probeInfo?.playlist),
         }),
       });
       const data = await res.json();
@@ -966,6 +997,7 @@ export default function Dashboard() {
               setBulkExpandPlaylists={setBulkExpandPlaylists}
               expandPlaylist={expandPlaylist}
               setExpandPlaylist={setExpandPlaylist}
+              playlistLoading={playlistLoading}
               error={error}
               probeInfo={probeInfo}
               appSettings={appSettings}

@@ -10,6 +10,7 @@ import {
   prepareDownloadUrl,
   friendlyMediaError,
   looksLikePlaylistUrl,
+  getPlaylistHint,
   extractYoutubeListId,
   classifyYoutubePlaylistKind,
 } from '../utils/mediaUrl.js';
@@ -208,10 +209,14 @@ export async function listPlaylistEntries(url) {
 
   await beginAdultWarpForUrl(normalized);
   try {
+    const maxEntries = Number(process.env.PLAYLIST_PROBE_MAX) || 200;
     const probeOnce = async (target) =>
       runJson([
         '-J',
         '--flat-playlist',
+        '--lazy-playlist',
+        '--playlist-end',
+        String(maxEntries),
         ...(await ytDlpProbeArgsForUrl(normalized, impersonateArgs(target), { allowPlaylist: true })),
         normalized,
       ]);
@@ -279,8 +284,10 @@ export async function listPlaylistEntries(url) {
 
 /**
  * Probe a URL: returns title, thumbnail and the list of selectable formats.
+ * Playlist/mix entry listing is skipped by default (slow on RD mixes) — use
+ * listPlaylistEntries() or probeMedia(url, { includePlaylist: true }).
  */
-export async function probeMedia(url) {
+export async function probeMedia(url, { includePlaylist = false } = {}) {
   const normalized = prepareDownloadUrl(url);
   await beginAdultWarpForUrl(normalized);
   try {
@@ -332,7 +339,12 @@ export async function probeMedia(url) {
 
     let playlist = null;
     if (looksLikePlaylistUrl(normalized)) {
-      playlist = await listPlaylistEntries(normalized);
+      if (includePlaylist) {
+        playlist = await listPlaylistEntries(normalized);
+      }
+      if (!playlist) {
+        playlist = getPlaylistHint(normalized);
+      }
     }
 
     return {

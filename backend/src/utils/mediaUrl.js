@@ -218,6 +218,23 @@ export function classifyYoutubePlaylistKind(listId) {
   return { kind: 'system', label: 'Playlist', requiresAuth: false };
 }
 
+/** Instant playlist/mix hint from URL — no yt-dlp call. */
+export function getPlaylistHint(raw) {
+  const normalized = String(raw ?? '').trim();
+  if (!looksLikePlaylistUrl(normalized)) return null;
+  const listId = extractYoutubeListId(normalized);
+  const classification = classifyYoutubePlaylistKind(listId);
+  return {
+    pending: true,
+    playlistId: listId,
+    playlistTitle: classification?.label || 'Playlist',
+    entryCount: null,
+    kind: classification?.kind || 'playlist',
+    kindLabel: classification?.label || 'Playlist',
+    requiresAuth: classification?.requiresAuth || false,
+  };
+}
+
 /** URLs that yt-dlp may treat as multi-entry playlists. */
 export function looksLikePlaylistUrl(raw) {
   try {

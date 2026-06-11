@@ -164,23 +164,47 @@ async function resolveFilenameForQueue(trimmed, dlType, { useAiRename = 0 } = {}
 
 // Inspect a media URL and return its available qualities/formats.
 router.post('/probe', async (req, res, next) => {
+  const { url, expand_playlist = false } = req.body;
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return res.status(400).json({ error: 'url is required' });
+  }
+  try {
+    const trimmed = prepareDownloadUrl(url.trim());
+    const wantPlaylist = expand_playlist === true || expand_playlist === 1;
+    const cacheKey = wantPlaylist ? `${trimmed}::playlist` : trimmed;
+    const cached = getCachedProbe(cacheKey);
+    if (cached) {
+      return res.json({ ...cached, cached: true });
+    }
+    const info = await probeMedia(trimmed, { includePlaylist: wantPlaylist });
+    setCachedProbe(cacheKey, info);
+    res.json(info);
+  } catch (err) {
+    res.status(err.message?.includes('blob:') || err.message?.includes('Invalid URL') ? 400 : 422).json({
+      error: err.message || 'Could not read media info',
+    });
+  }
+});
+
+router.post('/playlist', async (req, res, next) => {
   const { url } = req.body;
   if (!url || typeof url !== 'string' || !url.trim()) {
     return res.status(400).json({ error: 'url is required' });
   }
   try {
     const trimmed = prepareDownloadUrl(url.trim());
-    const cached = getCachedProbe(trimmed);
+    const cached = getCachedProbe(`${trimmed}::playlist-full`);
     if (cached) {
       return res.json({ ...cached, cached: true });
     }
-    const info = await probeMedia(trimmed);
-    setCachedProbe(trimmed, info);
-    res.json(info);
+    const playlist = await listPlaylistEntries(trimmed);
+    if (!playlist) {
+      return res.status(422).json({ error: 'Could not read playlist entries for this URL' });
+    }
+    setCachedProbe(`${trimmed}::playlist-full`, playlist);
+    res.json(playlist);
   } catch (err) {
-    res.status(err.message?.includes('blob:') || err.message?.includes('Invalid URL') ? 400 : 422).json({
-      error: err.message || 'Could not read media info',
-    });
+    next(err);
   }
 });
 

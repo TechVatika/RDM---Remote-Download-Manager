@@ -44,6 +44,7 @@ export default function NewDownloadView({
   setBulkExpandPlaylists,
   expandPlaylist,
   setExpandPlaylist,
+  playlistLoading = false,
   error,
   probeInfo,
   appSettings,
@@ -415,7 +416,7 @@ export default function NewDownloadView({
                       )}
                     </div>
                   </div>
-                  {probeInfo.playlist?.entryCount > 1 && (
+                  {(probeInfo.playlist?.entryCount > 1 || probeInfo.playlist?.pending) && (
                     <label className="playlist-toggle">
                       <input
                         type="checkbox"
@@ -424,8 +425,19 @@ export default function NewDownloadView({
                       />
                       <span>
                         Download full {probeInfo.playlist.kindLabel?.toLowerCase() || 'playlist'}
-                        <strong> ({probeInfo.playlist.entryCount} videos)</strong>
-                        {probeInfo.playlist.playlistTitle && (
+                        {probeInfo.playlist.entryCount > 1 && (
+                          <strong> ({probeInfo.playlist.entryCount} videos)</strong>
+                        )}
+                        {playlistLoading && (
+                          <span className="playlist-toggle-hint"> — counting videos…</span>
+                        )}
+                        {!playlistLoading && probeInfo.playlist.pending && !probeInfo.playlist.entryCount && (
+                          <span className="playlist-toggle-hint">
+                            {' '}
+                            — enable to queue the full list (Mix/Radio can be large)
+                          </span>
+                        )}
+                        {probeInfo.playlist.playlistTitle && probeInfo.playlist.entryCount > 1 && (
                           <span className="playlist-toggle-hint"> — {probeInfo.playlist.playlistTitle}</span>
                         )}
                         {probeInfo.playlist.requiresAuth && (
@@ -476,8 +488,11 @@ export default function NewDownloadView({
                       ? `Queue ${bulkExpandedCount} downloads`
                       : 'Queue all downloads'
                     : isMediaUrl
-                      ? probeInfo?.playlist?.entryCount > 1 && expandPlaylist
-                        ? `Queue playlist (${probeInfo.playlist.entryCount})`
+                      ? expandPlaylist && probeInfo?.playlist
+                        && (probeInfo.playlist.entryCount > 1 || probeInfo.playlist.pending)
+                        ? probeInfo.playlist.entryCount > 1
+                          ? `Queue playlist (${probeInfo.playlist.entryCount})`
+                          : 'Queue full mix'
                         : 'Queue best (yt-dlp)'
                       : 'Direct Download (HTTP)'}
               </button>
