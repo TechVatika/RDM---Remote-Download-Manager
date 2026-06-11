@@ -3090,6 +3090,32 @@
   white-space: nowrap;
 }
 
+[data-design='dell-1996'] .http-file-preview {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--dell-border, #ccc);
+  background: var(--dell-panel-alt, #f5f5f5);
+}
+
+[data-design='dell-1996'] .http-file-name {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-all;
+}
+
+[data-design='dell-1996'] .http-file-size {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .http-file-size--pending {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
 [data-design='dell-1996'] .bulk-preview-more {
   padding: 8px 10px;
   font-family: var(--font-body);

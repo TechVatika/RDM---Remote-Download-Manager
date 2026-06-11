@@ -24,7 +24,7 @@ import HelpView from '../views/HelpView.jsx';
 import UserAccountView from '../views/UserAccountView.jsx';
 import UpdatesView from '../views/UpdatesView.jsx';
 import { parseUrlLines } from '../utils/format.js';
-import { initPlatformUrlRules } from '../utils/platformDetect.js';
+import { initPlatformUrlRules, matchPlatformRule } from '../utils/platformDetect.js';
 import { isMediaSiteUrl } from '../utils/mediaDetect.js';
 import { addBookmark, loadRecentUrls } from '../utils/bookmarks.js';
 import { copyToClipboard } from '../utils/clipboard.js';
@@ -58,6 +58,8 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const [probing, setProbing] = useState(false);
   const [probeInfo, setProbeInfo] = useState(null);
+  const [resolvedAsHttp, setResolvedAsHttp] = useState(false);
+  const [httpMeta, setHttpMeta] = useState(null);
   const [filename, setFilename] = useState('');
   const [connections, setConnections] = useState(4);
   const [platformData, setPlatformData] = useState(null);
@@ -288,13 +290,15 @@ export default function Dashboard() {
     setFilename('');
     setProbeInfo(null);
     setExpandPlaylist(false);
+    setResolvedAsHttp(false);
+    setHttpMeta(null);
   }, [url]);
 
   const resolveFilenameFromServer = useCallback(
     async ({ silent = false } = {}) => {
       const trimmed = url.trim();
-      if (!trimmed || !isValidUrl(trimmed) || filenameTouched.current) return;
-      if (isLikelyMediaUrl(trimmed)) return;
+      if (!trimmed || !isValidUrl(trimmed) || filenameTouched.current) return null;
+      if (matchPlatformRule(trimmed)) return null;
 
       const requestId = ++resolveRequestId.current;
       setResolvingName(true);
@@ -304,19 +308,34 @@ export default function Dashboard() {
           body: JSON.stringify({ url: trimmed }),
         });
         const data = await res.json();
-        if (requestId !== resolveRequestId.current) return;
-        if (filenameTouched.current) return;
+        if (requestId !== resolveRequestId.current) return null;
+        if (filenameTouched.current) return null;
         if (!res.ok) throw new Error(data.error || 'Could not resolve filename');
+
+        const meta = {
+          filename: data.filename || null,
+          fileSize: data.fileSize ?? null,
+          supportsRanges: data.supportsRanges ?? null,
+          source: data.source || null,
+          ready: data.type === 'http' || Boolean(data.filename),
+        };
+        setHttpMeta(meta);
+        setResolvedAsHttp(data.type === 'http');
+
         if (data.filename) {
           setFilename(data.filename);
           if (!silent) {
-            toastSuccess(data.source === 'server' ? 'Filename from server' : 'Filename from URL');
+            toastSuccess(data.source === 'server' ? 'Filename from server headers' : 'Filename from URL');
           }
+        } else if (!silent && data.type === 'http') {
+          toastSuccess('Server headers checked');
         }
+        return meta;
       } catch (err) {
         if (requestId === resolveRequestId.current && !silent) {
           toastError(err.message);
         }
+        return null;
       } finally {
         if (requestId === resolveRequestId.current) {
           setResolvingName(false);
@@ -324,6 +343,20 @@ export default function Dashboard() {
       }
     },
     [url],
+  );
+
+  const ensureHttpHeadersResolved = useCallback(
+    async (trimmedUrl) => {
+      if (matchPlatformRule(trimmedUrl)) return null;
+      if (httpMeta?.ready && (filename.trim() || httpMeta.filename)) {
+        return {
+          ...httpMeta,
+          filename: filename.trim() || httpMeta.filename,
+        };
+      }
+      return resolveFilenameFromServer({ silent: true });
+    },
+    [httpMeta, filename, resolveFilenameFromServer],
   );
 
   const suggestFilenameForUrl = useCallback(
@@ -376,7 +409,8 @@ export default function Dashboard() {
     if (!trimmed || !isValidUrl(trimmed)) return;
 
     const timer = setTimeout(() => {
-      if (isLikelyMediaUrl(trimmed)) return;
+      // Skip only for known media platforms — unknown domains may serve direct files
+      if (matchPlatformRule(trimmed)) return;
       resolveFilenameFromServer({ silent: true });
     }, 450);
 
@@ -452,7 +486,9 @@ export default function Dashboard() {
     if (bulkMode || view !== 'new') return;
 
     const trimmed = url.trim();
-    if (!trimmed || !isValidUrl(trimmed) || !isLikelyMediaUrl(trimmed)) return;
+    if (!trimmed || !isValidUrl(trimmed)) return;
+    // Only auto-probe known media platforms — not ambiguous hash/token URLs
+    if (!matchPlatformRule(trimmed)) return;
 
     const timer = setTimeout(() => {
       runProbe({ silent: true });
@@ -540,7 +576,18 @@ export default function Dashboard() {
       }
 
       const trimmedUrl = url.trim();
-      const useMedia = isMediaSiteUrl(trimmedUrl);
+      const useMedia = resolvedAsHttp ? false : isMediaSiteUrl(trimmedUrl);
+
+      let queueFilename = filename.trim() || null;
+      let queueFileSize = null;
+      if (!useMedia) {
+        const meta = await ensureHttpHeadersResolved(trimmedUrl);
+        if (!meta?.filename && !queueFilename) {
+          throw new Error('Could not read filename from server headers — try Refresh filename');
+        }
+        queueFilename = queueFilename || meta?.filename || null;
+        queueFileSize = meta?.fileSize ?? null;
+      }
 
       const res = await apiFetch('/api/downloads', {
         method: 'POST',
@@ -551,8 +598,9 @@ export default function Dashboard() {
           format_id: useMedia ? 'best' : undefined,
           media_kind: useMedia ? 'video' : undefined,
           connections: useMedia ? undefined : Number(connections) || 4,
-          filename: useMedia ? null : filename.trim() || null,
-          ai_rename: aiRename && !filename.trim(),
+          filename: useMedia ? null : queueFilename,
+          file_size: !useMedia ? queueFileSize ?? undefined : undefined,
+          ai_rename: aiRename && !queueFilename,
           expand_playlist: useMedia && shouldExpandPlaylist(probeInfo?.playlist),
           title: useMedia ? probeInfo?.title || null : undefined,
           thumbnail: useMedia ? probeInfo?.thumbnail || null : undefined,
@@ -563,6 +611,8 @@ export default function Dashboard() {
       setUrl('');
       setFilename('');
       setProbeInfo(null);
+      setHttpMeta(null);
+      setResolvedAsHttp(false);
       toastSuccess(
         data.playlist
           ? `${data.count} videos from playlist queued — safe to close this tab`
@@ -998,6 +1048,8 @@ export default function Dashboard() {
               expandPlaylist={expandPlaylist}
               setExpandPlaylist={setExpandPlaylist}
               playlistLoading={playlistLoading}
+              resolvedAsHttp={resolvedAsHttp}
+              httpFileSize={httpMeta?.fileSize ?? null}
               error={error}
               probeInfo={probeInfo}
               appSettings={appSettings}

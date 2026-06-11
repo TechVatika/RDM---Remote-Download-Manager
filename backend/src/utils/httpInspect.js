@@ -79,3 +79,15 @@ export async function inspectRemoteHttpUrl(url, { signal, auth } = {}) {
     finalUrl: res.url || url,
   };
 }
+
+/** Filename + size from server headers — used before queueing HTTP downloads. */
+export async function resolveHttpDownloadMeta(url, options = {}) {
+  const info = await inspectRemoteHttpUrl(url, options);
+  return {
+    filename: info.filename,
+    fileSize: info.totalBytes ?? null,
+    supportsRanges: info.supportsRanges,
+    source: info.source,
+    finalUrl: info.finalUrl,
+  };
+}

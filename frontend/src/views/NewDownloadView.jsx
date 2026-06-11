@@ -1,7 +1,7 @@
 import { HiOutlineCloudArrowUp, HiBookmark, HiClock, HiCog6Tooth } from 'react-icons/hi2';
 import PlatformIcon from '../components/PlatformIcon.jsx';
 import { detectPlatformFromUrl } from '../utils/platformIcons.js';
-import { isMediaSiteUrl, isAgeGatedSite, getDownloadEngine, needsCookiesHint } from '../utils/mediaDetect.js';
+import { isAgeGatedSite, getDownloadEngine, needsCookiesHint, matchPlatformRule } from '../utils/mediaDetect.js';
 import { formatBytes, parseUrlLines } from '../utils/format.js';
 import ServerDownloadBanner from '../components/ServerDownloadBanner.jsx';
 import SectionEyebrow from '../components/SectionEyebrow.jsx';
@@ -45,6 +45,8 @@ export default function NewDownloadView({
   expandPlaylist,
   setExpandPlaylist,
   playlistLoading = false,
+  resolvedAsHttp = false,
+  httpFileSize = null,
   error,
   probeInfo,
   appSettings,
@@ -60,9 +62,11 @@ export default function NewDownloadView({
   onPickRecent,
 }) {
   const platformName = url.trim() ? detectPlatformFromUrl(url) : null;
-  const isMediaUrl = url.trim() ? isMediaSiteUrl(url) : false;
+  const isKnownMediaPlatform = url.trim() ? Boolean(matchPlatformRule(url)) : false;
+  const isMediaUrl = url.trim() ? isKnownMediaPlatform && !resolvedAsHttp : false;
+  const needsHeaderCheck = url.trim() && !bulkMode && !isKnownMediaPlatform;
   const needsAgeCookies = url.trim() ? isAgeGatedSite(url) : false;
-  const downloadEngine = url.trim() ? getDownloadEngine(url) : null;
+  const downloadEngine = isMediaUrl ? 'yt-dlp' : 'http-segmented';
   const cookiesHint = url.trim() ? needsCookiesHint(url) : false;
   const maxConnections = appSettings?.speed?.maxConnections
     ?? appSettings?.connections?.maxConnections
@@ -283,16 +287,29 @@ export default function NewDownloadView({
                     <label htmlFor="filename">
                       Filename
                       {resolvingName && (
-                        <span className="filename-ai-hint"> · resolving…</span>
+                        <span className="filename-ai-hint"> · checking headers…</span>
                       )}
                     </label>
                     <input
                       id="filename"
                       type="text"
-                      placeholder="Auto from server for direct links"
+                      placeholder="Auto from server headers for direct links"
                       value={filename}
                       onChange={(e) => setFilename(e.target.value)}
                     />
+                    {!isMediaUrl && (filename || httpFileSize) && (
+                      <div className="http-file-preview">
+                        {filename && <p className="http-file-name">{filename}</p>}
+                        {httpFileSize ? (
+                          <p className="http-file-size">{formatBytes(httpFileSize)}</p>
+                        ) : resolvingName ? (
+                          <p className="http-file-size http-file-size--pending">Size loading…</p>
+                        ) : null}
+                      </div>
+                    )}
+                    {needsHeaderCheck && resolvingName && !filename && (
+                      <p className="url-detect-hint">Checking server headers for filename and size…</p>
+                    )}
                   </>
                 )}
 
@@ -480,9 +497,11 @@ export default function NewDownloadView({
 
           <div className="new-download-footer">
             <div className="form-actions new-download-actions">
-              <button type="submit" className="btn-primary btn-lg" disabled={loading}>
+              <button type="submit" className="btn-primary btn-lg" disabled={loading || resolvingName}>
                 {loading
                   ? 'Queueing…'
+                  : resolvingName && !bulkMode && !isMediaUrl
+                    ? 'Checking headers…'
                   : bulkMode
                     ? bulkExpandPlaylists && bulkExpandedCount > bulkLineCount
                       ? `Queue ${bulkExpandedCount} downloads`
@@ -494,6 +513,8 @@ export default function NewDownloadView({
                           ? `Queue playlist (${probeInfo.playlist.entryCount})`
                           : 'Queue full mix'
                         : 'Queue best (yt-dlp)'
+                      : httpFileSize && filename
+                        ? `Direct Download (${formatBytes(httpFileSize)})`
                       : 'Direct Download (HTTP)'}
               </button>
               {!bulkMode && isMediaUrl && probeInfo && (

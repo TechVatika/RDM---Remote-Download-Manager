@@ -10,7 +10,7 @@ import {
 } from '../worker/segmentedDownload.js';
 import { resolveDestination } from '../config/paths.js';
 import { filenameFromUrl, sanitizeFilename } from '../utils/filename.js';
-import { inspectRemoteHttpUrl } from '../utils/httpInspect.js';
+import { inspectRemoteHttpUrl, resolveHttpDownloadMeta } from '../utils/httpInspect.js';
 import { assertDownloadUrlAllowed } from '../utils/ssrf.js';
 import { looksLikePlaylistUrl, prepareDownloadUrl } from '../utils/mediaUrl.js';
 import { isAdultSiteUrl } from '../data/adultSites.js';
@@ -23,7 +23,7 @@ import {
 } from '../utils/aiRename.js';
 import { getCachedProbe, setCachedProbe } from '../utils/probeCache.js';
 import { clampConnections, DEFAULT_CONNECTIONS } from '../config/speed.js';
-import { resolveDownloadType, analyzeUrl } from '../utils/platformDetect.js';
+import { resolveDownloadType, analyzeUrl, matchPlatformRule } from '../utils/platformDetect.js';
 
 const router = Router();
 
@@ -101,6 +101,7 @@ async function queueDownloadRow({
   media_kind = null,
   connections = null,
   filename = null,
+  file_size = null,
   title = null,
   thumbnail = null,
   ai_rename = 0,
@@ -110,8 +111,8 @@ async function queueDownloadRow({
   const { formatId, kind } = isMedia ? normalizeMediaFormat(format_id, media_kind) : { formatId: null, kind: null };
 
   const [result] = await pool.query(
-    `INSERT INTO downloads (url, category, status, type, format_id, media_kind, title, thumbnail, connections, filename, ai_rename, private)
-     VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO downloads (url, category, status, type, format_id, media_kind, title, thumbnail, connections, filename, file_size, ai_rename, private)
+     VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       trimmed,
       category,
@@ -122,6 +123,7 @@ async function queueDownloadRow({
       thumbnail,
       isMedia ? null : connections,
       filename,
+      file_size,
       isPrivate ? 0 : ai_rename,
       isPrivate ? 1 : 0,
     ],
@@ -144,15 +146,17 @@ async function resolveFilenameForQueue(trimmed, dlType, { useAiRename = 0 } = {}
 
   if (!isMedia) {
     try {
-      const info = await inspectRemoteHttpUrl(trimmed);
+      const info = await resolveHttpDownloadMeta(trimmed);
       return {
         filename: sanitizeFilename(info.filename || defaultHttpFilename(trimmed)),
+        fileSize: info.fileSize,
         aiRename: 0,
         isPrivate: false,
       };
     } catch {
       return {
         filename: defaultHttpFilename(trimmed),
+        fileSize: null,
         aiRename: 0,
         isPrivate: false,
       };
@@ -219,7 +223,8 @@ router.post('/resolve-filename', async (req, res, next) => {
     const trimmed = prepareDownloadUrl(url.trim());
     const dlType = resolveDownloadType(trimmed, 'http');
 
-    if (dlType === 'media') {
+    // Known media platform (YouTube, etc.) — skip HTTP inspection
+    if (dlType === 'media' && matchPlatformRule(trimmed)) {
       return res.json({
         type: 'media',
         filename: null,
@@ -228,10 +233,14 @@ router.post('/resolve-filename', async (req, res, next) => {
       });
     }
 
+    // Unknown domain or ambiguous URL — try HTTP inspection first.
+    // If the server returns Content-Disposition with a filename it is a direct
+    // file even if the path has no extension (e.g. hash-based CDN links).
     const info = await inspectRemoteHttpUrl(trimmed);
+    const resolvedType = info.headerName ? 'http' : dlType;
     res.json({
-      type: 'http',
-      filename: info.filename,
+      type: resolvedType,
+      filename: resolvedType === 'http' ? info.filename : null,
       fileSize: info.totalBytes,
       supportsRanges: info.supportsRanges,
       source: info.source,
@@ -515,6 +524,7 @@ router.post('/bulk', async (req, res, next) => {
         media_kind,
         connections: conn,
         filename: meta.filename,
+        file_size: meta.fileSize,
         ai_rename: meta.aiRename,
       });
       queued.push(row);
@@ -656,15 +666,22 @@ router.post('/', async (req, res, next) => {
   }
 
   let cleanName = null;
-  if (!isMedia && filename != null && typeof filename === 'string' && filename.trim()) {
-    cleanName = filename.trim().slice(0, 255);
-  } else if (!isMedia) {
+  let fileSize = null;
+  if (!isMedia) {
+    let headerMeta = null;
     try {
-      const info = await inspectRemoteHttpUrl(trimmed);
-      cleanName = sanitizeFilename(info.filename || defaultHttpFilename(trimmed));
+      headerMeta = await resolveHttpDownloadMeta(trimmed);
     } catch {
+      /* fall back to client filename / URL path */
+    }
+    if (filename != null && typeof filename === 'string' && filename.trim()) {
+      cleanName = filename.trim().slice(0, 255);
+    } else if (headerMeta?.filename) {
+      cleanName = sanitizeFilename(headerMeta.filename);
+    } else {
       cleanName = defaultHttpFilename(trimmed);
     }
+    fileSize = headerMeta?.fileSize ?? null;
   }
 
   // 18+ sites: private mode — never AI-named, hidden from history, purged on finish.
@@ -732,6 +749,7 @@ router.post('/', async (req, res, next) => {
       media_kind: effMediaKind,
       connections: conn,
       filename: effFilename,
+      file_size: fileSize,
       title: effTitle,
       thumbnail: effThumbnail,
       ai_rename: useAiRename,
