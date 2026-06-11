@@ -30,3 +30,13 @@ export function setCachedProbe(url, data) {
   prune();
   cache.set(url, { data, expiresAt: Date.now() + TTL_MS });
 }
+
+const HTTP_META_PREFIX = 'http-meta:';
+
+export function getCachedHttpMeta(url) {
+  return getCachedProbe(`${HTTP_META_PREFIX}${url}`);
+}
+
+export function setCachedHttpMeta(url, data) {
+  setCachedProbe(`${HTTP_META_PREFIX}${url}`, data);
+}

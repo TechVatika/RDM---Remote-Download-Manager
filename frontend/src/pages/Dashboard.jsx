@@ -412,7 +412,7 @@ export default function Dashboard() {
       // Skip only for known media platforms — unknown domains may serve direct files
       if (matchPlatformRule(trimmed)) return;
       resolveFilenameFromServer({ silent: true });
-    }, 450);
+    }, 80);
 
     return () => clearTimeout(timer);
   }, [url, bulkMode, view, resolveFilenameFromServer]);
@@ -581,7 +581,10 @@ export default function Dashboard() {
       let queueFilename = filename.trim() || null;
       let queueFileSize = null;
       if (!useMedia) {
-        const meta = await ensureHttpHeadersResolved(trimmedUrl);
+        const meta =
+          httpMeta?.ready && (filename.trim() || httpMeta.filename)
+            ? { ...httpMeta, filename: filename.trim() || httpMeta.filename }
+            : await ensureHttpHeadersResolved(trimmedUrl);
         if (!meta?.filename && !queueFilename) {
           throw new Error('Could not read filename from server headers — try Refresh filename');
         }

@@ -5,6 +5,24 @@ import net from 'net';
 // Off by default so legitimate home-LAN downloads keep working; the always-on
 // blocks below cover the dangerous SSRF targets (loopback, cloud metadata…).
 const STRICT = process.env.SSRF_STRICT === 'true';
+const DNS_CACHE_TTL_MS = Number(process.env.SSRF_DNS_CACHE_MS) || 10 * 60 * 1000;
+const dnsCache = new Map();
+
+async function lookupHostAddrs(host) {
+  const cached = dnsCache.get(host);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.addrs;
+  }
+  let addrs;
+  try {
+    // Prefer IPv4 — avoids slow IPv6 timeout on some resolvers
+    addrs = await dns.lookup(host, { all: true, family: 4 });
+  } catch {
+    addrs = await dns.lookup(host, { all: true });
+  }
+  dnsCache.set(host, { addrs, expiresAt: Date.now() + DNS_CACHE_TTL_MS });
+  return addrs;
+}
 
 const BLOCKED_HOSTS = new Set(['localhost', 'metadata', 'metadata.google.internal']);
 
@@ -77,7 +95,7 @@ export async function assertDownloadUrlAllowed(urlString) {
 
   let addrs;
   try {
-    addrs = await dns.lookup(host, { all: true });
+    addrs = await lookupHostAddrs(host);
   } catch {
     throw new Error('Could not resolve host');
   }

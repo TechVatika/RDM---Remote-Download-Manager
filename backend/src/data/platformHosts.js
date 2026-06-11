@@ -256,6 +256,10 @@ export function isMediaSiteUrl(url) {
 export function resolveDownloadType(url, requestedType = 'http') {
   if (requestedType === 'media') return 'media';
   if (isDirectFileUrl(url)) return 'http';
+  // Known video platforms always use yt-dlp
+  if (matchPlatformRule(url)) return 'media';
+  // Client explicitly queued as HTTP (e.g. hash CDN link with Content-Disposition)
+  if (requestedType === 'http') return 'http';
   if (isMediaSiteUrl(url)) return 'media';
   return 'http';
 }

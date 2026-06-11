@@ -10,7 +10,7 @@ import {
 } from '../worker/segmentedDownload.js';
 import { resolveDestination } from '../config/paths.js';
 import { filenameFromUrl, sanitizeFilename } from '../utils/filename.js';
-import { inspectRemoteHttpUrl, resolveHttpDownloadMeta } from '../utils/httpInspect.js';
+import { resolveHttpDownloadMeta } from '../utils/httpInspect.js';
 import { assertDownloadUrlAllowed } from '../utils/ssrf.js';
 import { looksLikePlaylistUrl, prepareDownloadUrl } from '../utils/mediaUrl.js';
 import { isAdultSiteUrl } from '../data/adultSites.js';
@@ -21,7 +21,7 @@ import {
   localSmartFilename,
   suggestFilename,
 } from '../utils/aiRename.js';
-import { getCachedProbe, setCachedProbe } from '../utils/probeCache.js';
+import { getCachedProbe, setCachedProbe, getCachedHttpMeta } from '../utils/probeCache.js';
 import { clampConnections, DEFAULT_CONNECTIONS } from '../config/speed.js';
 import { resolveDownloadType, analyzeUrl, matchPlatformRule } from '../utils/platformDetect.js';
 
@@ -236,14 +236,16 @@ router.post('/resolve-filename', async (req, res, next) => {
     // Unknown domain or ambiguous URL — try HTTP inspection first.
     // If the server returns Content-Disposition with a filename it is a direct
     // file even if the path has no extension (e.g. hash-based CDN links).
-    const info = await inspectRemoteHttpUrl(trimmed);
-    const resolvedType = info.headerName ? 'http' : dlType;
+    const wasCached = Boolean(getCachedHttpMeta(trimmed));
+    const info = await resolveHttpDownloadMeta(trimmed);
+    const resolvedType = info.source === 'server' ? 'http' : dlType;
     res.json({
       type: resolvedType,
       filename: resolvedType === 'http' ? info.filename : null,
-      fileSize: info.totalBytes,
+      fileSize: info.fileSize,
       supportsRanges: info.supportsRanges,
       source: info.source,
+      cached: wasCached,
     });
   } catch (err) {
     try {
@@ -283,9 +285,9 @@ async function previewOneUrl(raw, { expandPlaylists = false } = {}) {
 
     if (!isMedia) {
       try {
-        const info = await inspectRemoteHttpUrl(trimmed);
+        const info = await resolveHttpDownloadMeta(trimmed);
         filename = info.filename;
-        fileSize = info.totalBytes;
+        fileSize = info.fileSize;
         source = info.source;
       } catch {
         filename = defaultHttpFilename(trimmed);
@@ -620,6 +622,7 @@ router.post('/', async (req, res, next) => {
     thumbnail = null,
     connections = null,
     filename = null,
+    file_size = null,
     ai_rename = false,
     expand_playlist = false,
   } = req.body;
@@ -649,31 +652,35 @@ router.post('/', async (req, res, next) => {
     return res.status(400).json({ error: 'Invalid type' });
   }
 
-  const effectiveType = resolveDownloadType(trimmed, type);
-  const isMedia = effectiveType === 'media';
+  let effectiveType = resolveDownloadType(trimmed, type);
+  let headerMeta = getCachedHttpMeta(trimmed);
 
-  if (isMedia && type === 'http') {
-    // Auto-routed: video page URLs need yt-dlp, not segmented HTTP.
+  if (!headerMeta && (type === 'http' || !matchPlatformRule(trimmed))) {
+    try {
+      headerMeta = await resolveHttpDownloadMeta(trimmed);
+    } catch {
+      /* fall back below */
+    }
   }
 
-  if (effectiveType === 'media' && !['video', 'audio'].includes(media_kind || 'video')) {
+  if (headerMeta?.source === 'server' && headerMeta.filename) {
+    effectiveType = 'http';
+  } else if (type === 'http') {
+    effectiveType = 'http';
+  }
+
+  const isMedia = effectiveType === 'media';
+
+  if (isMedia && !['video', 'audio'].includes(media_kind || 'video')) {
     return res.status(400).json({ error: 'media_kind must be video or audio' });
   }
 
   let conn = null;
-  if (!isMedia) {
-    conn = clampConnections(connections ?? DEFAULT_CONNECTIONS);
-  }
-
   let cleanName = null;
   let fileSize = null;
+
   if (!isMedia) {
-    let headerMeta = null;
-    try {
-      headerMeta = await resolveHttpDownloadMeta(trimmed);
-    } catch {
-      /* fall back to client filename / URL path */
-    }
+    conn = clampConnections(connections ?? DEFAULT_CONNECTIONS);
     if (filename != null && typeof filename === 'string' && filename.trim()) {
       cleanName = filename.trim().slice(0, 255);
     } else if (headerMeta?.filename) {
@@ -681,7 +688,11 @@ router.post('/', async (req, res, next) => {
     } else {
       cleanName = defaultHttpFilename(trimmed);
     }
-    fileSize = headerMeta?.fileSize ?? null;
+    const parsedSize = file_size != null ? Number(file_size) : null;
+    fileSize =
+      Number.isFinite(parsedSize) && parsedSize > 0
+        ? parsedSize
+        : headerMeta?.fileSize ?? null;
   }
 
   // 18+ sites: private mode — never AI-named, hidden from history, purged on finish.
