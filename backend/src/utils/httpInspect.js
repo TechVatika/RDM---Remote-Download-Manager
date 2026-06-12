@@ -8,13 +8,24 @@ const USER_AGENT =
 
 const INSPECT_TIMEOUT_MS = Number(process.env.DOWNLOAD_INSPECT_TIMEOUT_MS) || 8000;
 
+export function refererForHttpUrl(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.includes('cdninstagram') || host.includes('fbcdn.net')) {
+      return 'https://www.instagram.com/';
+    }
+    return `${new URL(url).origin}/`;
+  } catch {
+    return 'https://www.instagram.com/';
+  }
+}
+
 function buildHeaders(url, extra = {}, auth = null) {
-  const parsed = new URL(url);
   const headers = {
     'User-Agent': USER_AGENT,
     Accept: '*/*',
     'Accept-Encoding': 'identity',
-    Referer: `${parsed.origin}/`,
+    Referer: refererForHttpUrl(url),
     Connection: 'keep-alive',
     ...extra,
   };

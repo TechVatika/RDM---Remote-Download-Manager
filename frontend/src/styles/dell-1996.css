@@ -3116,6 +3116,260 @@
   opacity: 0.75;
 }
 
+[data-design='dell-1996'] .ig-profile-picker {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .ig-profile-head {
+  margin-bottom: 12px;
+}
+
+[data-design='dell-1996'] .ig-profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 0;
+  object-fit: cover;
+  border: 1px solid var(--dell-frame);
+  flex-shrink: 0;
+}
+
+[data-design='dell-1996'] .ig-profile-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tint-sky);
+  color: var(--dell-ink);
+  opacity: 0.65;
+}
+
+[data-design='dell-1996'] .ig-profile-stats,
+[data-design='dell-1996'] .ig-profile-bio {
+  margin: 6px 0 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--dell-ink);
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .ig-profile-stats span + span::before {
+  content: ' · ';
+}
+
+[data-design='dell-1996'] .ig-profile-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-sky);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+[data-design='dell-1996'] .ig-profile-banner--auth {
+  border-color: var(--dell-frame);
+  background: var(--dell-yellow);
+}
+
+[data-design='dell-1996'] .ig-profile-banner-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+
+[data-design='dell-1996'] .ig-profile-banner-copy {
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .ig-profile-banner-copy strong {
+  display: block;
+  margin-bottom: 2px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+[data-design='dell-1996'] .ig-profile-banner-copy p {
+  margin: 0;
+}
+
+[data-design='dell-1996'] .ig-section-label {
+  margin-top: 0;
+}
+
+[data-design='dell-1996'] .ig-section-label + .ig-target-grid,
+[data-design='dell-1996'] .ig-section-label + .ig-highlights-list {
+  margin-top: 0;
+}
+
+[data-design='dell-1996'] .ig-target-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 520px) {
+  [data-design='dell-1996'] .ig-target-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-design='dell-1996'] .ig-target-btn,
+[data-design='dell-1996'] .ig-highlight-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 72px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--dell-frame);
+  border-radius: 0;
+  background: var(--dell-canvas);
+  color: var(--dell-ink);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 13px;
+  box-shadow: none;
+}
+
+[data-design='dell-1996'] .ig-target-btn:hover:not(:disabled),
+[data-design='dell-1996'] .ig-highlight-btn:hover:not(:disabled) {
+  background: var(--tint-lime);
+}
+
+[data-design='dell-1996'] .ig-target-btn:focus-visible,
+[data-design='dell-1996'] .ig-highlight-btn:focus-visible {
+  outline: 2px solid var(--dell-frame);
+  outline-offset: 1px;
+}
+
+[data-design='dell-1996'] .ig-target-btn:disabled,
+[data-design='dell-1996'] .ig-highlight-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+[data-design='dell-1996'] .ig-target-btn--auth {
+  border-top: 3px solid var(--dell-yellow);
+}
+
+[data-design='dell-1996'] .ig-target-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--dell-frame);
+  background: var(--tint-peach);
+}
+
+[data-design='dell-1996'] .ig-target-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .ig-target-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-design='dell-1996'] .ig-target-title-row strong {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+[data-design='dell-1996'] .ig-target-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border: 1px solid var(--dell-frame);
+  background: var(--dell-yellow);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+[data-design='dell-1996'] .ig-target-count {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  opacity: 0.85;
+}
+
+[data-design='dell-1996'] .ig-target-desc {
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0.8;
+}
+
+[data-design='dell-1996'] .ig-highlights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+[data-design='dell-1996'] .ig-highlight-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--dell-frame);
+}
+
+[data-design='dell-1996'] .ig-highlight-cover--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tint-sky);
+}
+
+[data-design='dell-1996'] .ig-highlight-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+[data-design='dell-1996'] .ig-profile-avatar--thumb {
+  object-fit: cover;
+}
+
+[data-design='dell-1996'] .ig-media-download-row {
+  margin-bottom: 12px;
+}
+
+[data-design='dell-1996'] .ig-media-download-row .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-design='dell-1996'] .ig-profile-note {
+  margin: 4px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--dell-frame);
+  font-family: var(--font-body);
+  font-size: 11px;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
 [data-design='dell-1996'] .bulk-preview-more {
   padding: 8px 10px;
   font-family: var(--font-body);

@@ -126,8 +126,84 @@ function analyzeCookiesFile(cookiesPath) {
   };
 }
 
+/** Cookie header string for Instagram API requests (session tokens + cookies.txt). */
+export function getInstagramCookieHeader() {
+  const parts = [];
+  const config = loadAuthConfig();
+
+  if (config.instagram?.sessionid?.trim()) {
+    parts.push(`sessionid=${config.instagram.sessionid.trim()}`);
+  }
+  if (config.instagram?.ds_user_id?.trim()) {
+    parts.push(`ds_user_id=${config.instagram.ds_user_id.trim()}`);
+  }
+  if (config.instagram?.csrftoken?.trim()) {
+    parts.push(`csrftoken=${config.instagram.csrftoken.trim()}`);
+  }
+
+  const paths = [
+    process.env.YTDLP_COOKIES_FILE?.trim(),
+    fs.existsSync(UPLOADED_COOKIES) ? UPLOADED_COOKIES : null,
+  ].filter(Boolean);
+
+  for (const cookiesPath of paths) {
+    try {
+      if (!cookiesPath || !fs.existsSync(cookiesPath)) continue;
+      for (const line of fs.readFileSync(cookiesPath, 'utf8').split('\n')) {
+        if (!line || line.startsWith('#')) continue;
+        const cols = line.split('\t');
+        if (cols.length < 7) continue;
+        const domain = cols[0].toLowerCase();
+        if (!domain.includes('instagram.com')) continue;
+        const name = cols[5];
+        const value = cols[6];
+        if (name && value && !parts.some((p) => p.startsWith(`${name}=`))) {
+          parts.push(`${name}=${value}`);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return parts.length ? parts.join('; ') : '';
+}
+
+function hasInstagramSessionFields(config = loadAuthConfig()) {
+  return Boolean(
+    config.instagram?.sessionid?.trim() ||
+      config.instagram?.ds_user_id?.trim() ||
+      config.instagram?.csrftoken?.trim(),
+  );
+}
+
+function cookiesFileHasInstagram(cookiesPath = UPLOADED_COOKIES) {
+  try {
+    if (!cookiesPath || !fs.existsSync(cookiesPath)) return false;
+    return fs.readFileSync(cookiesPath, 'utf8').toLowerCase().includes('instagram.com');
+  } catch {
+    return false;
+  }
+}
+
+/** Write Instagram session tokens to cookies.txt for yt-dlp (Instagram-only, no Facebook). */
+export function ensureInstagramCookieFile(config = loadAuthConfig()) {
+  if (!hasInstagramSessionFields(config)) return false;
+  try {
+    writeSessionCookies({ instagram: config.instagram, facebook: {} });
+    return fs.existsSync(UPLOADED_COOKIES);
+  } catch {
+    return false;
+  }
+}
+
 /** yt-dlp CLI args for authentication */
 export function getYtdlpAuthArgs() {
+  return getYtdlpAuthArgsForUrl(null);
+}
+
+/** yt-dlp auth — Instagram always uses cookies when configured (required since ~2024). */
+export function getYtdlpAuthArgsForUrl(url = null) {
   const publicOnly = process.env.PUBLIC_MEDIA_ONLY !== 'false';
 
   const envPath = process.env.YTDLP_COOKIES_FILE?.trim();
@@ -136,6 +212,14 @@ export function getYtdlpAuthArgs() {
   }
 
   const config = loadAuthConfig();
+  let isInstagram = false;
+  if (url) {
+    try {
+      isInstagram = /instagram\.com/i.test(new URL(String(url)).hostname);
+    } catch {
+      isInstagram = false;
+    }
+  }
 
   switch (config.method) {
     case 'browser': {
@@ -152,6 +236,12 @@ export function getYtdlpAuthArgs() {
       return { args: [], method: 'upload' };
     }
     case 'session': {
+      if (isInstagram && hasInstagramSessionFields(config)) {
+        ensureInstagramCookieFile(config);
+        if (fs.existsSync(UPLOADED_COOKIES)) {
+          return { args: ['--cookies', UPLOADED_COOKIES], method: 'session-instagram' };
+        }
+      }
       if (publicOnly) {
         return { args: [], method: 'public' };
       }
@@ -159,7 +249,7 @@ export function getYtdlpAuthArgs() {
       return { args: ['--cookies', UPLOADED_COOKIES], method: 'session' };
     }
     case 'credentials': {
-      if (publicOnly) {
+      if (publicOnly && !isInstagram) {
         return { args: [], method: 'public' };
       }
       const password = decryptSecret(config.credentials?.passwordEnc);
@@ -174,6 +264,9 @@ export function getYtdlpAuthArgs() {
       return { args: [], method: 'credentials' };
     }
     default:
+      if (isInstagram && fs.existsSync(UPLOADED_COOKIES) && cookiesFileHasInstagram()) {
+        return { args: ['--cookies', UPLOADED_COOKIES], method: 'upload-instagram' };
+      }
       return { args: [], method: publicOnly ? 'public' : 'none' };
   }
 }

@@ -680,7 +680,10 @@ export default function Dashboard() {
           title: probeInfo?.title || null,
           thumbnail: probeInfo?.thumbnail || null,
           ai_rename: aiRename,
-          expand_playlist: shouldExpandPlaylist(probeInfo?.playlist),
+          expand_playlist:
+            probeInfo?.instagramDirectMedia?.kind === 'highlight' ||
+            probeInfo?.instagramDirectMedia?.kind === 'story' ||
+            shouldExpandPlaylist(probeInfo?.playlist),
         }),
       });
       const data = await res.json();
@@ -697,6 +700,54 @@ export default function Dashboard() {
     } catch (err) {
       setError(err.message);
       toastError(err.message);
+    }
+  };
+
+  const queueInstagram = async (target, highlightId = null) => {
+    setError('');
+    setLoading(true);
+    requestNotifyPermission();
+    const profile = probeInfo?.instagramProfile;
+    const labels = {
+      avatar: 'Profile picture',
+      stories: 'Stories',
+      posts: 'Posts',
+      reels: 'Reels',
+      highlights: 'Highlight',
+    };
+    try {
+      const res = await apiFetch('/api/downloads', {
+        method: 'POST',
+        body: JSON.stringify({
+          url: url.trim(),
+          category,
+          type: target === 'avatar' ? 'http' : 'media',
+          format_id: 'best',
+          media_kind: 'video',
+          title: profile?.fullName || probeInfo?.title || null,
+          thumbnail: profile?.profilePicUrl || probeInfo?.thumbnail || null,
+          instagram_target: target,
+          instagram_highlight_id: highlightId,
+          instagram_avatar_url: profile?.profilePicUrl || null,
+          expand_playlist: target !== 'avatar',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to queue download');
+      setUrl('');
+      setProbeInfo(null);
+      toastSuccess(
+        data.count > 1
+          ? `${data.count} Instagram items queued (${labels[target] || target})`
+          : `${labels[target] || 'Instagram'} queued — safe to close this tab`,
+      );
+      setView('active');
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+      toastError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1064,6 +1115,8 @@ export default function Dashboard() {
               onResolveFilename={handleResolveFilename}
               onProbe={handleProbe}
               onQueueMedia={queueMedia}
+              onQueueInstagram={queueInstagram}
+              onQueueInstagramHighlight={(id) => queueInstagram('highlights', id)}
               onSaveBookmark={handleSaveBookmark}
               onPickRecent={handlePickRecent}
             />

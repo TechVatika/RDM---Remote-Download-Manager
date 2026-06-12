@@ -13,6 +13,11 @@ import { filenameFromUrl, sanitizeFilename } from '../utils/filename.js';
 import { resolveHttpDownloadMeta } from '../utils/httpInspect.js';
 import { assertDownloadUrlAllowed } from '../utils/ssrf.js';
 import { looksLikePlaylistUrl, prepareDownloadUrl } from '../utils/mediaUrl.js';
+import {
+  parseInstagramUrl,
+  resolveInstagramTarget,
+} from '../utils/instagramUrl.js';
+import { resolveInstagramAvatarUrl } from '../utils/instagramProbe.js';
 import { isAdultSiteUrl } from '../data/adultSites.js';
 import { resolveQueuedFilename, defaultHttpFilename } from '../utils/queueMetadata.js';
 import {
@@ -625,6 +630,9 @@ router.post('/', async (req, res, next) => {
     file_size = null,
     ai_rename = false,
     expand_playlist = false,
+    instagram_target = null,
+    instagram_highlight_id = null,
+    instagram_avatar_url = null,
   } = req.body;
 
   if (!url || typeof url !== 'string') {
@@ -648,14 +656,48 @@ router.post('/', async (req, res, next) => {
     return res.status(400).json({ error: 'Invalid URL' });
   }
 
-  if (!['http', 'media'].includes(type)) {
+  let igOverride = null;
+  let igParsedForExpand = null;
+  if (instagram_target) {
+    const igParsed = parseInstagramUrl(trimmed);
+    const username = igParsed?.kind === 'profile' ? igParsed.username : null;
+    if (!username) {
+      return res.status(400).json({ error: 'Instagram target requires a profile URL' });
+    }
+    try {
+      let avatarUrl = instagram_avatar_url?.trim() || null;
+      if (instagram_target === 'avatar' && !avatarUrl) {
+        avatarUrl = await resolveInstagramAvatarUrl(username);
+      }
+      igOverride = resolveInstagramTarget(username, instagram_target, {
+        highlightId: instagram_highlight_id,
+        avatarUrl,
+      });
+      trimmed = igOverride.url;
+    } catch (err) {
+      return res.status(400).json({ error: err.message || 'Invalid Instagram target' });
+    }
+  } else {
+    igParsedForExpand = parseInstagramUrl(trimmed);
+  }
+
+  const requestedType = igOverride?.type || type;
+  let requestedExpand = igOverride?.expandPlaylist ?? expand_playlist;
+  if (!instagram_target && (igParsedForExpand?.kind === 'highlight' || igParsedForExpand?.kind === 'story')) {
+    requestedExpand = true;
+  }
+  if (instagram_target === 'highlights' || instagram_target === 'stories' || instagram_target === 'posts' || instagram_target === 'reels') {
+    requestedExpand = true;
+  }
+
+  if (!['http', 'media'].includes(requestedType)) {
     return res.status(400).json({ error: 'Invalid type' });
   }
 
-  let effectiveType = resolveDownloadType(trimmed, type);
+  let effectiveType = resolveDownloadType(trimmed, requestedType);
   let headerMeta = getCachedHttpMeta(trimmed);
 
-  if (!headerMeta && (type === 'http' || !matchPlatformRule(trimmed))) {
+  if (!headerMeta && (requestedType === 'http' || !matchPlatformRule(trimmed))) {
     try {
       headerMeta = await resolveHttpDownloadMeta(trimmed);
     } catch {
@@ -665,7 +707,7 @@ router.post('/', async (req, res, next) => {
 
   if (headerMeta?.source === 'server' && headerMeta.filename) {
     effectiveType = 'http';
-  } else if (type === 'http') {
+  } else if (requestedType === 'http') {
     effectiveType = 'http';
   }
 
@@ -683,6 +725,8 @@ router.post('/', async (req, res, next) => {
     conn = clampConnections(connections ?? DEFAULT_CONNECTIONS);
     if (filename != null && typeof filename === 'string' && filename.trim()) {
       cleanName = filename.trim().slice(0, 255);
+    } else if (igOverride?.filename) {
+      cleanName = sanitizeFilename(igOverride.filename);
     } else if (headerMeta?.filename) {
       cleanName = sanitizeFilename(headerMeta.filename);
     } else {
@@ -715,7 +759,10 @@ router.post('/', async (req, res, next) => {
   const effTitle = isMedia && !isPrivate ? title : null;
   const effThumbnail = isMedia && !isPrivate ? thumbnail : null;
   const effFilename = !isMedia || isPrivate ? cleanName : null;
-  const expandPlaylist = (expand_playlist === true || expand_playlist === 1) && isMedia && !isPrivate;
+  const expandPlaylist =
+    (requestedExpand === true || requestedExpand === 1 || expand_playlist === true || expand_playlist === 1) &&
+    isMedia &&
+    !isPrivate;
 
   try {
     if (expandPlaylist) {

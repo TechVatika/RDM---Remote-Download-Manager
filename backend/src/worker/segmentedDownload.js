@@ -3,7 +3,7 @@ import fsp from 'fs/promises';
 import path from 'path';
 import { Readable } from 'stream';
 import { filenameFromUrl, sanitizeFilename } from '../utils/filename.js';
-import { inspectRemoteHttpUrl } from '../utils/httpInspect.js';
+import { inspectRemoteHttpUrl, refererForHttpUrl } from '../utils/httpInspect.js';
 
 const USER_AGENT =
   process.env.DOWNLOAD_USER_AGENT ||
@@ -44,12 +44,11 @@ function sleep(ms, signal) {
 }
 
 function buildHeaders(url, extra = {}, auth = null) {
-  const parsed = new URL(url);
   const headers = {
     'User-Agent': USER_AGENT,
     Accept: '*/*',
     'Accept-Encoding': 'identity',
-    Referer: `${parsed.origin}/`,
+    Referer: refererForHttpUrl(url),
     Connection: 'keep-alive',
     ...extra,
   };

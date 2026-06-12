@@ -52,6 +52,8 @@ export function normalizeMediaUrl(raw) {
     if (host === 'instagram.com' || host.endsWith('.instagram.com')) {
       parsed.hostname = 'www.instagram.com';
       parsed.pathname = parsed.pathname.replace(/^\/reels\//, '/reel/');
+      // img_index breaks yt-dlp with --no-playlist; canonical /p/ URL is enough for carousel handling.
+      parsed.searchParams.delete('img_index');
     }
 
     if (host.includes('tiktok.com')) {
@@ -124,6 +126,12 @@ export function friendlyMediaError(message = '') {
       'Cloudflare WARP proxy was not ready (connection refused on local SOCKS port). ' +
       'Retry the download — WARP connects automatically for adult sites. ' +
       'If it keeps failing, run: warp-cli --accept-tos connect'
+    );
+  }
+
+  if (/empty media response|instagram sent an empty/i.test(m)) {
+    return (
+      'Instagram requires login cookies for this content. Open Platform Auth → Instagram, paste sessionid and ds_user_id from your browser, then retry.'
     );
   }
 

@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
-import { getYtdlpAuthArgs } from '../config/cookies.js';
+import { getYtdlpAuthArgs, getYtdlpAuthArgsForUrl } from '../config/cookies.js';
 import { resolveProxyArgsForUrl, proxyWouldApply, beginAdultWarpForUrl, releaseAdultWarpForUrl, usesWarpForUrl } from '../config/adultProxy.js';
 import { verifyWarpProxyReady } from '../config/warpProxy.js';
 import { isAdultSiteUrl } from '../data/adultSites.js';
@@ -14,6 +14,8 @@ import {
   extractYoutubeListId,
   classifyYoutubePlaylistKind,
 } from '../utils/mediaUrl.js';
+import { parseInstagramUrl, instagramMediaCanonicalUrl, instagramDirectMediaLabel, instagramAlternateMediaUrl } from '../utils/instagramUrl.js';
+import { probeInstagramProfile, fetchInstagramMediaPreview, formatInstagramCaption, resolveInstagramPostDirectUrls } from '../utils/instagramProbe.js';
 import { logger } from '../utils/logger.js';
 
 import {
@@ -28,8 +30,21 @@ const USER_AGENT =
   process.env.DOWNLOAD_USER_AGENT ||
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
-function authArgs() {
-  return getYtdlpAuthArgs().args;
+function authArgsForUrl(url) {
+  return getYtdlpAuthArgsForUrl(url).args;
+}
+
+function igAllowsPlaylist(url) {
+  const kind = parseInstagramUrl(url)?.kind;
+  return kind === 'highlight' || kind === 'story' || kind === 'post';
+}
+
+function isInstagramCdnUrl(url) {
+  try {
+    return /(?:cdninstagram|fbcdn)\.net/i.test(new URL(String(url)).hostname);
+  } catch {
+    return false;
+  }
 }
 
 function siteExtraArgs(url) {
@@ -45,6 +60,10 @@ function siteExtraArgs(url) {
       args.push('--add-header', 'Referer:https://xhamster.com/');
     } else if (host.includes('redtube')) {
       args.push('--add-header', 'Referer:https://www.redtube.com/');
+    } else if (host.includes('instagram.com') || host.includes('cdninstagram.com') || host.includes('fbcdn.net')) {
+      args.push('--add-header', 'Referer:https://www.instagram.com/');
+      args.push('--add-header', 'Accept-Language:en-US,en;q=0.9');
+      if (host.includes('instagram.com')) args.push('--force-ipv4');
     }
   } catch {
     /* ignore */
@@ -54,7 +73,42 @@ function siteExtraArgs(url) {
 
 async function ytDlpArgsForUrl(url, extra = []) {
   const proxyArgs = isAdultSiteUrl(url) ? await resolveProxyArgsForUrl(url) : [];
-  return [...commonArgs(), ...siteExtraArgs(url), ...proxyArgs, ...extra];
+  return [...commonArgs(url), ...siteExtraArgs(url), ...proxyArgs, ...extra];
+}
+
+function buildInstagramMediaProbeResult(igParsed, normalized, meta = {}, { fallback = false } = {}) {
+  const caption =
+    formatInstagramCaption(meta.description) ||
+    formatInstagramCaption(meta.title) ||
+    meta.caption ||
+    null;
+  const title =
+    caption ||
+    (igParsed.shortcode
+      ? `${instagramDirectMediaLabel(igParsed.kind)} · ${igParsed.shortcode}`
+      : instagramDirectMediaLabel(igParsed.kind));
+
+  return {
+    title,
+    thumbnail: meta.thumbnail || null,
+    duration: meta.duration ?? null,
+    uploader: meta.uploader || igParsed.username || null,
+    caption,
+    extractor: 'Instagram',
+    normalizedUrl: normalized,
+    videoQualities: meta.videoQualities || [],
+    availableHeights: meta.availableHeights || [],
+    maxVideoHeight: meta.maxVideoHeight ?? null,
+    audioAvailable: meta.audioAvailable ?? true,
+    playlist: meta.playlist ?? null,
+    instagramMediaFallback: fallback,
+    instagramDirectMedia: {
+      kind: igParsed.kind,
+      label: instagramDirectMediaLabel(igParsed.kind),
+      shortcode: igParsed.shortcode || null,
+      highlightId: igParsed.highlightId || null,
+    },
+  };
 }
 
 /**
@@ -98,10 +152,11 @@ function ytdlpSpawnEnv() {
   return env;
 }
 
-function commonArgs() {
-  return [
+function commonArgs(url = null) {
+  const igPlaylist = igAllowsPlaylist(url);
+  const args = [
     '--no-warnings',
-    '--no-playlist',
+    ...(igPlaylist ? ['--yes-playlist'] : ['--no-playlist']),
     '--geo-bypass',
     '--retries',
     '5',
@@ -113,15 +168,25 @@ function commonArgs() {
     String(YTDLP_CONCURRENT_FRAGMENTS),
     '-N',
     String(YTDLP_PARALLEL),
-    ...authArgs(),
+    ...authArgsForUrl(url),
   ];
+  if (parseInstagramUrl(url)?.kind === 'post') {
+    try {
+      const idx = new URL(url).searchParams.get('img_index');
+      if (idx && /^\d+$/.test(idx)) args.push('--playlist-items', idx);
+    } catch {
+      /* ignore */
+    }
+  }
+  return args;
 }
 
 /** Lighter args for format probing — faster metadata fetch. */
-function probeArgs({ allowPlaylist = false } = {}) {
+function probeArgs(url = null, { allowPlaylist = false } = {}) {
+  const igPlaylist = allowPlaylist || igAllowsPlaylist(url);
   return [
     '--no-warnings',
-    ...(allowPlaylist ? [] : ['--no-playlist']),
+    ...(igPlaylist ? ['--yes-playlist'] : ['--no-playlist']),
     '--geo-bypass',
     '--retries',
     '2',
@@ -131,13 +196,14 @@ function probeArgs({ allowPlaylist = false } = {}) {
     '20',
     '--user-agent',
     USER_AGENT,
-    ...authArgs(),
+    ...authArgsForUrl(url),
   ];
 }
 
 async function ytDlpProbeArgsForUrl(url, extra = [], { allowPlaylist = false } = {}) {
+  const igPlaylist = allowPlaylist || igAllowsPlaylist(url);
   const proxyArgs = isAdultSiteUrl(url) ? await resolveProxyArgsForUrl(url) : [];
-  return [...probeArgs({ allowPlaylist }), ...siteExtraArgs(url), ...proxyArgs, ...extra];
+  return [...probeArgs(url, { allowPlaylist: igPlaylist }), ...siteExtraArgs(url), ...proxyArgs, ...extra];
 }
 
 /**
@@ -288,20 +354,62 @@ export async function listPlaylistEntries(url) {
  * listPlaylistEntries() or probeMedia(url, { includePlaylist: true }).
  */
 export async function probeMedia(url, { includePlaylist = false } = {}) {
-  const normalized = prepareDownloadUrl(url);
+  let normalized = prepareDownloadUrl(url);
+  const igParsed = parseInstagramUrl(normalized);
+  const isIgDirectMedia =
+    igParsed && igParsed.kind !== 'profile' && igParsed.kind !== 'unknown';
+  if (isIgDirectMedia) {
+    const canonical = instagramMediaCanonicalUrl(igParsed);
+    if (canonical) normalized = prepareDownloadUrl(canonical);
+  }
+
   await beginAdultWarpForUrl(normalized);
   try {
+    if (igParsed?.kind === 'profile') {
+      const profile = await probeInstagramProfile(igParsed.username);
+      return {
+        title: profile.fullName || `@${profile.username}`,
+        thumbnail: profile.profilePicUrl,
+        duration: null,
+        uploader: profile.username,
+        extractor: 'Instagram',
+        normalizedUrl: normalized,
+        videoQualities: [],
+        availableHeights: [],
+        maxVideoHeight: null,
+        audioAvailable: false,
+        playlist: null,
+        instagramProfile: profile,
+      };
+    }
+
     const probeOnce = async (target) =>
       runJson(['-J', ...(await ytDlpProbeArgsForUrl(normalized, impersonateArgs(target))), normalized]);
+
+    const isIgMedia = isIgDirectMedia;
+    const igPreview = isIgMedia
+      ? await fetchInstagramMediaPreview(normalized, { allowPlaylist: igAllowsPlaylist(normalized) })
+      : null;
 
     let raw;
     try {
       raw = await probeOnce(null);
     } catch (err) {
       const target = await impersonateTarget();
-      if (target && isBlockLikeError(err.message)) {
-        log.info(`probe blocked, retrying with impersonation: ${new URL(normalized).hostname}`);
-        raw = await probeOnce(target);
+      if (target && (isIgMedia || isBlockLikeError(err.message))) {
+        log.info(`Instagram probe retry with impersonation: ${new URL(normalized).hostname}`);
+        try {
+          raw = await probeOnce(target);
+        } catch (err2) {
+          if (isIgMedia) {
+            log.warn(`Instagram media probe failed for ${normalized}: ${err2.message}`);
+            return buildInstagramMediaProbeResult(igParsed, normalized, igPreview || {}, { fallback: true });
+          }
+          throw err2;
+        }
+      } else if (isIgMedia) {
+        log.warn(`Instagram media probe failed for ${normalized}: ${err.message}`);
+        return buildInstagramMediaProbeResult(igParsed, normalized, igPreview || {}, { fallback: true });
       } else {
         throw err;
       }
@@ -347,6 +455,22 @@ export async function probeMedia(url, { includePlaylist = false } = {}) {
       }
     }
 
+    if (isIgMedia) {
+      return buildInstagramMediaProbeResult(igParsed, normalized, {
+        description: meta.description,
+        title: meta.title,
+        caption: igPreview?.caption,
+        thumbnail: meta.thumbnail || igPreview?.thumbnail,
+        duration: meta.duration,
+        uploader: meta.uploader || meta.channel || igPreview?.uploader,
+        videoQualities,
+        availableHeights,
+        maxVideoHeight,
+        audioAvailable,
+        playlist,
+      });
+    }
+
     return {
       title: meta.title || 'media',
       thumbnail: meta.thumbnail || null,
@@ -372,7 +496,7 @@ export async function probeMedia(url, { includePlaylist = false } = {}) {
  * Translate the stored format token + kind into yt-dlp args.
  * format_id tokens: 'best' | a height like '1080' | a raw yt-dlp format id.
  */
-function buildFormatArgs({ formatId, kind, mergeFormat }) {
+function buildFormatArgs({ formatId, kind, mergeFormat, url }) {
   if (kind === 'audio') {
     return [
       '-x',
@@ -383,6 +507,12 @@ function buildFormatArgs({ formatId, kind, mergeFormat }) {
       '--embed-thumbnail',
       '--embed-metadata',
     ];
+  }
+
+  const igKind = url ? parseInstagramUrl(url)?.kind : null;
+  if (igKind === 'post' || isInstagramCdnUrl(url)) {
+    const selector = !formatId || formatId === 'best' ? 'b' : formatId;
+    return ['-f', selector];
   }
 
   let selector;
@@ -437,10 +567,16 @@ async function downloadMediaInner({
   formatId,
   kind = 'video',
   auth = null,
+  skipPostFallback = false,
+  outputTemplate: outputTemplateOverride = null,
 }) {
   fs.mkdirSync(destDir, { recursive: true });
 
-  const outputTemplate = path.join(destDir, '%(title).200B [%(id)s].%(ext)s');
+  const outputTemplate =
+    outputTemplateOverride ||
+    (isInstagramCdnUrl(normalized)
+      ? path.join(destDir, 'instagram-media.%(ext)s')
+      : path.join(destDir, '%(title).200B [%(id)s].%(ext)s'));
 
   if (proxyWouldApply(normalized)) {
     log.info(`WARP ON for adult-site download: ${new URL(normalized).hostname}`);
@@ -473,7 +609,7 @@ async function downloadMediaInner({
       '--print-to-file',
       'after_move:filepath',
       pathFile,
-      ...buildFormatArgs({ formatId, kind }),
+      ...buildFormatArgs({ formatId, kind, url: normalized }),
       '-o',
       outputTemplate,
       normalized,
@@ -570,7 +706,6 @@ async function downloadMediaInner({
 
         if (!filePath || !fs.existsSync(filePath)) {
           const err = new Error('Download finished but output file was not found');
-          err.fatal = true;
           return reject(err);
         }
 
@@ -585,6 +720,51 @@ async function downloadMediaInner({
     return await runOnce(null);
   } catch (err) {
     if (err.name === 'AbortError' || err.fatal) throw err;
+
+    const igParsed = parseInstagramUrl(normalized);
+    const postFallbackWorthy =
+      !skipPostFallback &&
+      igParsed?.kind === 'post' &&
+      igParsed.shortcode &&
+      /output file was not found|downloading 0 items|empty media response|no video in this post/i.test(
+        `${err.raw || ''} ${err.message || ''}`,
+      );
+    if (postFallbackWorthy) {
+      log.info(`Instagram post empty — trying og:image fallback for ${igParsed.shortcode}`);
+      try {
+        const resolved = await resolveInstagramPostDirectUrls(igParsed.shortcode);
+        if (resolved?.urls?.length) {
+          const primary = resolved.urls.find((u) => u.type === 'video') || resolved.urls[0];
+          return await downloadMediaInner({
+            normalized: primary.url,
+            destDir,
+            onProgress,
+            signal,
+            formatId: formatId || 'best',
+            kind: 'video',
+            auth,
+            skipPostFallback: true,
+            outputTemplate: path.join(destDir, `${igParsed.shortcode}.%(ext)s`),
+          });
+        }
+      } catch (fallbackErr) {
+        if (fallbackErr.name === 'AbortError' || fallbackErr.fatal) throw fallbackErr;
+        err = fallbackErr;
+      }
+    }
+
+    const altUrl = instagramAlternateMediaUrl(igParsed);
+    const emptyIgMedia = /empty media response|login/i.test(err.raw || err.message || '');
+    if (altUrl && emptyIgMedia && altUrl !== normalized) {
+      log.info(`Instagram post failed, retrying as reel URL: ${altUrl}`);
+      normalized = prepareDownloadUrl(altUrl);
+      try {
+        return await runOnce(null);
+      } catch (altErr) {
+        if (altErr.name === 'AbortError' || altErr.fatal) throw altErr;
+        err = altErr;
+      }
+    }
 
     const target = await impersonateTarget();
     if (target && isBlockLikeError(err.raw || err.message)) {

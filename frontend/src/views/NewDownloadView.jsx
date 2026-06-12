@@ -6,6 +6,8 @@ import { formatBytes, parseUrlLines } from '../utils/format.js';
 import ServerDownloadBanner from '../components/ServerDownloadBanner.jsx';
 import SectionEyebrow from '../components/SectionEyebrow.jsx';
 import MediaFormatPicker, { BulkMediaFormatPicker } from '../components/MediaFormatPicker.jsx';
+import InstagramProfilePicker from '../components/InstagramProfilePicker.jsx';
+import InstagramMediaPicker from '../components/InstagramMediaPicker.jsx';
 
 function SectionDivider({ label }) {
   return (
@@ -58,6 +60,8 @@ export default function NewDownloadView({
   onResolveFilename,
   onProbe,
   onQueueMedia,
+  onQueueInstagram,
+  onQueueInstagramHighlight,
   onSaveBookmark,
   onPickRecent,
 }) {
@@ -418,63 +422,94 @@ export default function NewDownloadView({
 
           {!bulkMode && isMediaUrl && (
             <>
-              <SectionDivider label="Available formats" />
+              <SectionDivider
+                label={
+                  probeInfo?.instagramProfile
+                    ? 'Instagram profile'
+                    : probeInfo?.instagramDirectMedia || probeInfo?.instagramMediaFallback
+                      ? `Instagram ${probeInfo.instagramDirectMedia?.label || 'media'}`
+                      : 'Available formats'
+                }
+              />
               {probeInfo ? (
                 <div className="media-picker new-download-media new-download-media--full">
-                  <div className="media-head">
-                    {probeInfo.thumbnail && (
-                      <img src={probeInfo.thumbnail} alt="" className="media-thumb" />
-                    )}
-                    <div>
-                      <p className="media-title">{probeInfo.title}</p>
-                      {probeInfo.uploader && <p className="media-sub">{probeInfo.uploader}</p>}
-                      {probeInfo.extractor && (
-                        <span className="media-source">{probeInfo.extractor}</span>
+                  {probeInfo.instagramProfile ? (
+                    <InstagramProfilePicker
+                      profile={probeInfo.instagramProfile}
+                      loading={loading}
+                      onQueue={onQueueInstagram}
+                      onQueueHighlight={onQueueInstagramHighlight}
+                    />
+                  ) : probeInfo.instagramDirectMedia || probeInfo.instagramMediaFallback ? (
+                    <InstagramMediaPicker
+                      probeInfo={probeInfo}
+                      loading={loading}
+                      onDownload={onQueueMedia}
+                      onSelectFormat={onQueueMedia}
+                      showFormats={!probeInfo.instagramMediaFallback && probeInfo.availableHeights?.length > 0}
+                    />
+                  ) : (
+                    <>
+                      <div className="media-head">
+                        {probeInfo.thumbnail && (
+                          <img src={probeInfo.thumbnail} alt="" className="media-thumb" />
+                        )}
+                        <div>
+                          <p className="media-title">{probeInfo.title}</p>
+                          {probeInfo.uploader && <p className="media-sub">{probeInfo.uploader}</p>}
+                          {probeInfo.extractor && (
+                            <span className="media-source">{probeInfo.extractor}</span>
+                          )}
+                        </div>
+                      </div>
+                      {(probeInfo.playlist?.entryCount > 1 || probeInfo.playlist?.pending) && (
+                        <label className="playlist-toggle">
+                          <input
+                            type="checkbox"
+                            checked={expandPlaylist}
+                            onChange={(e) => setExpandPlaylist(e.target.checked)}
+                          />
+                          <span>
+                            Download full {probeInfo.playlist.kindLabel?.toLowerCase() || 'playlist'}
+                            {probeInfo.playlist.entryCount > 1 && (
+                              <strong> ({probeInfo.playlist.entryCount} videos)</strong>
+                            )}
+                            {playlistLoading && (
+                              <span className="playlist-toggle-hint"> — counting videos…</span>
+                            )}
+                            {!playlistLoading && probeInfo.playlist.pending && !probeInfo.playlist.entryCount && (
+                              <span className="playlist-toggle-hint">
+                                {' '}
+                                — enable to queue the full list (Mix/Radio can be large)
+                              </span>
+                            )}
+                            {probeInfo.playlist.playlistTitle && probeInfo.playlist.entryCount > 1 && (
+                              <span className="playlist-toggle-hint"> — {probeInfo.playlist.playlistTitle}</span>
+                            )}
+                            {probeInfo.playlist.requiresAuth && (
+                              <span className="playlist-toggle-hint playlist-toggle-hint--auth">
+                                Private library list — import YouTube cookies in Platform Auth first.
+                              </span>
+                            )}
+                          </span>
+                        </label>
                       )}
-                    </div>
-                  </div>
-                  {(probeInfo.playlist?.entryCount > 1 || probeInfo.playlist?.pending) && (
-                    <label className="playlist-toggle">
-                      <input
-                        type="checkbox"
-                        checked={expandPlaylist}
-                        onChange={(e) => setExpandPlaylist(e.target.checked)}
+                      <MediaFormatPicker
+                        probeInfo={probeInfo}
+                        onSelect={onQueueMedia}
+                        showHints
                       />
-                      <span>
-                        Download full {probeInfo.playlist.kindLabel?.toLowerCase() || 'playlist'}
-                        {probeInfo.playlist.entryCount > 1 && (
-                          <strong> ({probeInfo.playlist.entryCount} videos)</strong>
-                        )}
-                        {playlistLoading && (
-                          <span className="playlist-toggle-hint"> — counting videos…</span>
-                        )}
-                        {!playlistLoading && probeInfo.playlist.pending && !probeInfo.playlist.entryCount && (
-                          <span className="playlist-toggle-hint">
-                            {' '}
-                            — enable to queue the full list (Mix/Radio can be large)
-                          </span>
-                        )}
-                        {probeInfo.playlist.playlistTitle && probeInfo.playlist.entryCount > 1 && (
-                          <span className="playlist-toggle-hint"> — {probeInfo.playlist.playlistTitle}</span>
-                        )}
-                        {probeInfo.playlist.requiresAuth && (
-                          <span className="playlist-toggle-hint playlist-toggle-hint--auth">
-                            Private library list — import YouTube cookies in Platform Auth first.
-                          </span>
-                        )}
-                      </span>
-                    </label>
+                    </>
                   )}
-                  <MediaFormatPicker
-                    probeInfo={probeInfo}
-                    onSelect={onQueueMedia}
-                    showHints
-                  />
                 </div>
               ) : (
                 <div className="media-picker media-picker--empty">
                   {probing ? (
-                    <p className="url-detect-hint url-detect-hint--status">Loading formats from server…</p>
+                    <p className="url-detect-hint url-detect-hint--status">
+                      {url.includes('instagram.com')
+                        ? 'Loading Instagram…'
+                        : 'Loading formats from server…'}
+                    </p>
                   ) : (
                     <>
                       <p className="url-detect-hint">Paste a media URL above or click Fetch formats.</p>
